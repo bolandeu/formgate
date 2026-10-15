@@ -23,7 +23,7 @@ final class SelfCheckJson
     public static function response(Settings $settings, Storage $storage, SigningKey $signingKey, array $findings): Response
     {
         return Response::json(200, [
-            'settings' => ['found' => true, 'where' => SettingsLocator::where($settings->file()), 'file' => $settings->file()],
+            'settings' => ['found' => true, 'where' => SettingsLocator::where($settings->file())],
             'domains' => $settings->domains(),
             'channels' => self::channels($settings),
             'storage' => ['backend' => $storage->kind(), 'writable' => StoragePlace::find()->isWritable()],

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.17.0 — 2026-10-15
+
+### Cleanup: current docs only, no server paths in the JSON self-check
+
+Every doc of the repo says what the code does now, once, in the right place; a done plan or backlog item is gone; the public docs say nothing about private repos; the JSON self-check gives where the settings are, not the server path.
+
+- Lite JSON self-check: drop the settings file path, keep found and where
+
 ## v0.16.0 — 2026-10-15
 
 ### Analytics fields: meta_ fields to storage and CRM, a short source block for managers, server request data

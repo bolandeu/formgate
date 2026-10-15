@@ -67,7 +67,7 @@ Self-check — страница, которую открывает операт�
 
 `GET …?key=<ключ>` с заголовком `Accept: application/json` отдаёт `200` JSON вместо страницы. Тестовых сообщений он не шлёт и секретов (токен, пароль, webhook, ключ) не содержит. Поля:
 
-- `settings` — `found`, `where` (`env`, `above_site_root`, `above_releases`, `lite_folder`) и `file`;
+- `settings` — `found`, `where` (`env`, `above_site_root`, `above_releases`, `lite_folder`), без пути к файлу;
 - `domains`;
 - `channels` — для каждого `number`, `type`, `name` и `configured` (обязательные опции заданы);
 - `storage` — `backend` и `writable`;

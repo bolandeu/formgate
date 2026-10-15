@@ -279,7 +279,7 @@ describe('as JSON (Accept: application/json)', () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('application/json');
-    expect(body.settings).toEqual({ found: true, where: 'above_site_root', file: realpathSync(aboveTheSite(lite.site)) });
+    expect(body.settings).toEqual({ found: true, where: 'above_site_root' });
     expect(body.domains).toEqual(['site.ru']);
     expect(body.channels).toEqual([
       { number: 1, type: 'telegram', name: null, configured: true },
