@@ -1,0 +1,12 @@
+#!/usr/bin/env php
+<?php
+// Pro CLI entry: loads the code and the global Pro configuration and runs the console application.
+
+declare(strict_types=1);
+
+use Formgate\Pro\Cli\ConsoleApplication;
+use Formgate\Pro\Config\ProConfig;
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+exit((new ConsoleApplication(ProConfig::fromEnvironment()))->run());

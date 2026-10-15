@@ -1,0 +1,18 @@
+# Replaces the body of the http server block of the serversideup/php fpm-nginx image
+# (sites-available/ssl-off includes this file inside its own `server { }`): only /f/<key> and /health reach the
+# Pro entry script; every other path is 404.
+listen ${NGINX_HTTP_PORT} default_server;
+listen [::]:${NGINX_HTTP_PORT} default_server;
+server_name _;
+root ${NGINX_WEBROOT};
+
+location ~ ^/(f/[^/]+|health)$ {
+    include fastcgi_params;
+    fastcgi_pass 127.0.0.1:9000;
+    fastcgi_param SCRIPT_FILENAME $document_root/index.php;
+    fastcgi_read_timeout ${PHP_MAX_EXECUTION_TIME};
+}
+
+location / {
+    return 404;
+}

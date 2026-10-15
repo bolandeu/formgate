@@ -1,0 +1,14 @@
+# Dev override: the source is mounted, so a PHP change is seen without a rebuild (vendor stays from the image).
+# Enable it with COMPOSE_FILE=compose.yaml:compose.dev.yaml in .env. Compose adds these mounts to the base ones.
+x-source: &source
+  volumes:
+    - ./pro/src:/var/www/html/src
+    - ./pro/public:/var/www/html/public
+    - ./pro/bin:/var/www/html/bin
+    - ./lite/src:/var/www/lite/src
+
+services:
+  web:
+    <<: *source
+  worker:
+    <<: *source

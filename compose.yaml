@@ -1,0 +1,61 @@
+# Pro as one Compose project (ADR 0006): `docker compose up -d` starts web and worker;
+# compose.dev.yaml (listed in COMPOSE_FILE of a dev .env) mounts the source.
+# The profile tls (docs/pro-tls.md) adds Caddy with a Let's Encrypt certificate for FORMGATE_DOMAIN.
+# FORMGATE_WEB_PORT holds the host address and port, 127.0.0.1:8095 by default.
+# FORMGATE_IMAGE_TAG tags the built image, latest by default; CI builds its own tag so that it does not replace this one.
+# The data and projects folders are set here only: the Dockerfile gets them as build args, Pro as environment.
+x-pro: &pro
+  build:
+    context: ./pro
+    dockerfile: Dockerfile
+    additional_contexts:
+      lite: ./lite
+    args:
+      FORMGATE_DATA_DIR: &data-dir /var/lib/formgate/data
+      FORMGATE_PROJECTS_DIR: &projects-dir /var/lib/formgate/projects
+  image: formgate-pro:${FORMGATE_IMAGE_TAG:-latest}
+  env_file: .env
+  environment:
+    FORMGATE_DATA_DIR: *data-dir
+    FORMGATE_PROJECTS_DIR: *projects-dir
+  volumes:
+    - { type: volume, source: data, target: *data-dir }
+    - { type: volume, source: projects, target: *projects-dir }
+
+services:
+  web:
+    <<: *pro
+    ports:
+      - "${FORMGATE_WEB_PORT:?set FORMGATE_WEB_PORT in .env}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --show-error --fail http://localhost:$${NGINX_HTTP_PORT}/health"]
+    restart: unless-stopped
+
+  # The worker runs no nginx; GET /health of web reports its heartbeat.
+  worker:
+    <<: *pro
+    command: ["php", "/var/www/html/bin/formgate", "worker"]
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+
+  # Only in the profile tls. FORMGATE_DOMAIN is optional here: without the profile Compose does not start this service.
+  caddy:
+    image: caddy:2.10.2
+    profiles: [tls]
+    environment:
+      FORMGATE_DOMAIN: ${FORMGATE_DOMAIN:-}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - { type: bind, source: ./pro/docker/Caddyfile, target: /etc/caddy/Caddyfile, read_only: true }
+      - { type: volume, source: caddy_data, target: /data }
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  data:
+  projects:
+  caddy_data:

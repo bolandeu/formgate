@@ -1,0 +1,14 @@
+{
+    "name": "bolandeu/formgate-lite",
+    "description": "Formgate Lite: a PHP form handler that sits next to one site",
+    "type": "project",
+    "require": {
+        "php": ">=8.1",
+        "phpmailer/phpmailer": "^7.1"
+    },
+    "config": {
+        "platform": {
+            "php": "8.1.0"
+        }
+    }
+}

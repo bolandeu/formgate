@@ -1,0 +1,11 @@
+# Formgate Lite on Apache: deny the settings file and the storage files of this folder (formgate.php,
+# formgate-*.jsonl, the guarded formgate-*.php files, formgate.sqlite). submit.php stays open.
+<FilesMatch "^formgate(-[a-z-]+)?\.(php|jsonl|sqlite)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

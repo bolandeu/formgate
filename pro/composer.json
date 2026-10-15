@@ -1,0 +1,22 @@
+{
+    "name": "bolandeu/formgate-pro",
+    "description": "Formgate Pro: one gateway for many sites on the Lite PHP core",
+    "type": "project",
+    "require": {
+        "php": ">=8.1",
+        "phpmailer/phpmailer": "^7.1",
+        "symfony/console": "^6.4",
+        "symfony/filesystem": "^6.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Formgate\\Pro\\": "src/",
+            "Formgate\\": "../lite/src/"
+        }
+    },
+    "config": {
+        "platform": {
+            "php": "8.1.0"
+        }
+    }
+}

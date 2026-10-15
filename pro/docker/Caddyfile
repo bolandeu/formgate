@@ -1,0 +1,4 @@
+# Site address and upstream of the tls profile (docs/pro-tls.md). Caddy gets the certificate for the domain by itself.
+{$FORMGATE_DOMAIN} {
+	reverse_proxy web:8080
+}

@@ -1,0 +1,15 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import { handlerUrl } from 'virtual:formgate';
+---
+<html lang="ru">
+  <head><meta charset="utf-8" /><title>One</title><ClientRouter /></head>
+  <body>
+    <a href="/second/">Second</a>
+    <form id="first" action={handlerUrl} method="post" data-formgate>
+      <input name="phone" />
+      <button type="submit">Send</button>
+      <p data-form-status></p>
+    </form>
+  </body>
+</html>

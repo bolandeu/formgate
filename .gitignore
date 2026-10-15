@@ -1,0 +1,10 @@
+.DS_Store
+Thumbs.db
+node_modules/
+lite/vendor/
+pro/vendor/
+tests/.tmp/
+/dist/
+lite/formgate.js
+.astro/
+.env
