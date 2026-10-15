@@ -1,4 +1,4 @@
-// The Astro integration formgate({endpoint?}): copies the Lite folder into dist/ (unless a Pro endpoint is set),
+// The Astro integration formgate({endpoint?, bind?}): copies the Lite folder into dist/ (unless a Pro endpoint is set),
 // gives components the handler URL through the virtual module virtual:formgate and binds forms with data-formgate
 // on load and on astro:page-load. It adds no pages, routes or global CSS and is safe to add twice.
 import type { AstroIntegration } from 'astro';
@@ -16,6 +16,8 @@ const standaloneClient = ['formgate.js', 'formgate-pow-widget.js'];
 
 export interface FormgateOptions {
   endpoint?: string;
+  // false: inject no page script; the site binds its forms itself with bindForms or bindForm from formgate/client.
+  bind?: boolean;
 }
 
 // The client sits next to this module in src/ (.ts) and in dist/ (.js).
@@ -77,7 +79,7 @@ export default function formgate(options: FormgateOptions = {}): AstroIntegratio
           return;
         }
         updateConfig({ vite: { plugins: [handlerPlugin(handlerUrl)] } });
-        injectScript('page', bindScript);
+        if (options.bind ?? true) injectScript('page', bindScript);
       },
       'astro:config:done': ({ injectTypes }) => {
         if (active) injectTypes({ filename: 'virtual.d.ts', content: virtualModuleTypes });

@@ -24,7 +24,21 @@ describe('astro integration', () => {
     expect(formAction(site)).toBe('/formgate/submit.php');
   }, 120_000);
 
-  it('with base: the form action is the Lite handler URL under the base', async () => {
+  it('bind: false: no page script, the Lite folder is still in dist, the form action is the Lite handler URL', async () => {
+    const site = await buildSite('astro-basic', [formgate({ bind: false })]);
+
+    expect(page(site).querySelectorAll('script')).toHaveLength(0);
+    expect(existsSync(join(site.dist, 'formgate/submit.php'))).toBe(true);
+    expect(formAction(site)).toBe('/formgate/submit.php');
+  }, 120_000);
+
+  it('bind: true: every page has the client script', async () => {
+    const site = await buildSite('astro-basic', [formgate({ bind: true })]);
+
+    expect(page(site).querySelectorAll('script')).toHaveLength(1);
+  }, 120_000);
+
+  it('with base:the form action is the Lite handler URL under the base', async () => {
     const site = await buildSite('astro-basic', [formgate()], { base: '/sub' });
 
     expect(existsSync(join(site.dist, 'formgate/submit.php'))).toBe(true);

@@ -214,6 +214,22 @@ for (const form of document.querySelectorAll('form[data-formgate]')) bindForm(fo
 
 `formgate/astro` делает всё сама: кладёт Lite в сборку (или пропускает его, если задан адрес Pro), привязывает клиент к формам с `data-formgate`, в том числе после переходов `ClientRouter`. Адрес обработчика она отдаёт для атрибута `action` формы.
 
+Опция `bind` (по умолчанию `true`): `formgate({ bind: false })` не добавляет на страницы клиентский скрипт. Lite в сборку кладётся, как раньше, а `virtual:formgate` по-прежнему отдаёт `handlerUrl`. Формы сайт привязывает сам через `bindForms` или `bindForm` из `formgate/client`, в том числе после `astro:page-load`. Так код формы грузится только на страницах с формой:
+
+```astro
+---
+import { handlerUrl } from 'virtual:formgate';
+---
+<form action={handlerUrl} method="post" data-formgate>…</form>
+
+<script>
+  import { bindForms } from 'formgate/client';
+
+  bindForms();
+  document.addEventListener('astro:page-load', () => bindForms());
+</script>
+```
+
 ### Файл `formgate.js` — для статических лендингов без CSP
 
 Файл лежит в папке Lite рядом с `submit.php`, поэтому Lite отдаёт его сам. Pro его не отдаёт (на порту форм только `/f/<ключ>` и `/health`): скопируйте `formgate.js` из пакета (`formgate/lite/formgate.js`) на свой сайт.

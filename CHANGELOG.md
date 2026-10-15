@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.20.3 — 2026-10-15
+
+### Outside epics
+
+- Astro integration: option bind (default true); bind: false injects no client script
+
 ## v0.20.2 — 2026-10-15
 
 ### Free self-hosted captcha: ALTCHA proof-of-work in the time token, invisible by default, widget on request
