@@ -1,8 +1,9 @@
-// install.sh --update: the move to a newer tag, the record of the previous tag, and the rollback when /health fails.
-import { readFileSync } from 'node:fs';
+// install.sh --update: the move to a newer tag, the record of the previous tag, the rollback when /health fails, and the
+// keys of the new .env.example that .env lacks.
+import { appendFileSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { composeCommands, createInstallSandbox, removesVolume, type InstallSandbox } from '../support/install.ts';
+import { composeCommands, createInstallSandbox, readEnvFile, removesVolume, type InstallSandbox } from '../support/install.ts';
 
 const tags = ['v0.4.0', 'v0.5.0'];
 
@@ -100,5 +101,79 @@ describe('install.sh --update', () => {
     } finally {
       empty.remove();
     }
+  });
+
+  describe('the keys of the new .env.example', () => {
+    const envPath = () => join(sandbox.dir, '.env');
+    const lineList = () => readFileSync(envPath(), 'utf8').split('\n');
+
+    it('appends a missing empty secret with a random value, names only the key and keeps the other lines', async () => {
+      const without = lineList().filter((line) => !line.startsWith('FORMGATE_TOKEN_SECRET='));
+      writeFileSync(envPath(), without.join('\n'));
+
+      const run = await sandbox.run(['--update'], { tags, healthyTags: tags });
+
+      expect(run.status).toBe(0);
+      const secret = readEnvFile(envPath()).FORMGATE_TOKEN_SECRET;
+      expect(secret).toMatch(/^[0-9a-f]{64}$/);
+      expect(run.stdout).toContain('added to .env: FORMGATE_TOKEN_SECRET');
+      expect(run.stdout).not.toContain(secret);
+      expect(lineList().filter((line) => !line.startsWith('FORMGATE_TOKEN_SECRET='))).toEqual(without);
+      expect(statSync(envPath()).mode & 0o777).toBe(0o600);
+    });
+
+    it('never changes a key that .env has, also an empty one', async () => {
+      writeFileSync(envPath(), readFileSync(envPath(), 'utf8').replace(/^FORMGATE_RETENTION_DAYS=.*$/m, 'FORMGATE_RETENTION_DAYS=7').replace(/^FORMGATE_TOKEN_SECRET=.*$/m, 'FORMGATE_TOKEN_SECRET='));
+      const lines = readFileSync(envPath(), 'utf8');
+
+      const run = await sandbox.run(['--update'], { tags, healthyTags: tags });
+
+      expect(run.status).toBe(0);
+      expect(readFileSync(envPath(), 'utf8')).toBe(lines);
+      expect(readEnvFile(envPath()).FORMGATE_RETENTION_DAYS).toBe('7');
+      expect(readEnvFile(envPath()).FORMGATE_TOKEN_SECRET).toBe('');
+      expect(run.stdout).not.toContain('added to .env');
+    });
+
+    it('never activates a key that .env has as a commented line', async () => {
+      writeFileSync(envPath(), readFileSync(envPath(), 'utf8').replace(/^FORMGATE_TOKEN_SECRET=.*$/m, '# FORMGATE_TOKEN_SECRET=old'));
+      appendFileSync(join(sandbox.source, '.env.example'), 'FORMGATE_IMAGE_TAG=latest\n');
+      const lines = readFileSync(envPath(), 'utf8');
+
+      const run = await sandbox.run(['--update'], { tags, healthyTags: tags });
+
+      expect(run.status).toBe(0);
+      expect(readFileSync(envPath(), 'utf8')).toBe(lines);
+      expect(run.stdout).not.toContain('added to .env');
+    });
+
+    it('appends a missing FORMGATE_ADMIN_KEYS empty', async () => {
+      writeFileSync(envPath(), readFileSync(envPath(), 'utf8').replace(/^FORMGATE_ADMIN_KEYS=.*\n/m, ''));
+
+      const run = await sandbox.run(['--update'], { tags, healthyTags: tags });
+
+      expect(run.status).toBe(0);
+      expect(readEnvFile(envPath()).FORMGATE_ADMIN_KEYS).toBe('');
+      expect(run.stdout).toContain('added to .env: FORMGATE_ADMIN_KEYS');
+    });
+
+    it('appends a new non-secret key with the example value', async () => {
+      appendFileSync(join(sandbox.source, '.env.example'), 'FORMGATE_NEW_LIMIT=42\n');
+
+      const run = await sandbox.run(['--update'], { tags, healthyTags: tags });
+
+      expect(run.status).toBe(0);
+      expect(readEnvFile(envPath()).FORMGATE_NEW_LIMIT).toBe('42');
+      expect(run.stdout).toContain('added to .env: FORMGATE_NEW_LIMIT');
+    });
+
+    it('keeps the appended keys after a rollback', async () => {
+      appendFileSync(join(sandbox.source, '.env.example'), 'FORMGATE_NEW_LIMIT=42\n');
+
+      const run = await sandbox.run(['--update', '--health-timeout', '2'], { tags, healthyTags: ['v0.4.0'] });
+
+      expect(run.status).not.toBe(0);
+      expect(readEnvFile(envPath()).FORMGATE_NEW_LIMIT).toBe('42');
+    });
   });
 });

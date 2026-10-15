@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.20.7 — 2026-10-15
+
+### Outside epics
+
+- Pro update: install.sh --update adds the new .env keys, with a random value for a new secret
+
 ## v0.20.6 — 2026-10-15
 
 ### Free self-hosted captcha: ALTCHA proof-of-work in the time token, invisible by default, widget on request

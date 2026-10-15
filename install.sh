@@ -155,6 +155,18 @@ write_env() {
   mv "$draft" "$dir/.env"
 }
 
+# Appends each key of the new .env.example that .env lacks, with the example value; an empty *_SECRET gets a random
+# value. A key that .env has stays as it is, also empty or commented out. Prints the key names only, never a value.
+append_new_env_keys() {
+  for key in $(sed -n 's/^\([A-Z][A-Z0-9_]*\)=.*/\1/p' "$dir/.env.example"); do
+    grep -Eq "^[#[:space:]]*$key=" "$dir/.env" && continue
+    value=$(sed -n "s/^$key=//p" "$dir/.env.example" | head -n 1)
+    case $key in *_SECRET) [ -n "$value" ] || value=$(random_secret) ;; esac
+    set_env "$dir/.env" "$key" "$value"
+    say "added to .env: $key"
+  done
+}
+
 # GET /health on the web port of .env (address:port or port).
 health_url() {
   web_port=$(awk 'index($0, "FORMGATE_WEB_PORT=") == 1 { value = substr($0, 19) } END { print value }' "$dir/.env")
@@ -195,7 +207,7 @@ start_pro() {
 
 deploy() {
   say "Starting Pro $1"
-  checkout_ref "$1" && start_pro
+  checkout_ref "$1" && append_new_env_keys && start_pro
 }
 
 record_tag() {
