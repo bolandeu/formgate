@@ -31,6 +31,9 @@ return [
     // The keys of the admin API, comma separated: a request with `Authorization: Bearer <key>` of any of them is
     // served, so two keys can be valid during a rotation. Empty turns the admin API off.
     'FORMGATE_ADMIN_KEYS' => '',
+    // On (1, true, on) turns the private-address guard of the webhook channels off: a receiver on this server or on a
+    // private network is allowed. Off, a receiver host must resolve to public addresses only.
+    'FORMGATE_WEBHOOK_ALLOW_PRIVATE' => '0',
     // The operator alert bot for all of Pro (one Telegram bot). Without a token the alerts are only logged.
     'FORMGATE_ALERT_BOT_TOKEN' => '',
     'FORMGATE_ALERT_CHAT_ID' => '',

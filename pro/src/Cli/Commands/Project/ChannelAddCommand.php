@@ -38,7 +38,7 @@ final class ChannelAddCommand extends Command
         $values = (new ProjectRegistry($this->config->projectsDir()))->change(
             (string) $input->getArgument('key'),
             fn (array $values): array => ProjectChanges::addChannel($values, (string) $input->getArgument('type'), $options),
-            ProjectChannels::verifyLast(...),
+            ProjectChannels::fromConfig($this->config)->verifyLast(...),
         );
         $output->writeln('Channel ' . count($values['channels']) . ' added.');
         return Command::SUCCESS;

@@ -3,7 +3,8 @@
 // section 3). The signature follows the Standard Webhooks scheme: headers webhook-id, webhook-timestamp and
 // webhook-signature (`v1,` + base64 of HMAC-SHA256 over `id.timestamp.body`). A 2xx answer is a delivery.
 // Options: url (https unless allow_http), secret (a `whsec_` secret is base64; any other is raw bytes),
-// headers (name => value), timeout_seconds, allow_http.
+// headers (name => value), timeout_seconds, allow_http. Pro gives an address guard that checks the receiver address
+// before each send; a refused address is a failed send with the reason.
 
 declare(strict_types=1);
 
@@ -24,7 +25,7 @@ final class WebhookChannel implements Channel
     private readonly Http $http;
 
     /** @param array<string, mixed> $options */
-    public function __construct(array $options)
+    public function __construct(array $options, ?AddressGuard $addressGuard = null)
     {
         RequiredOptions::check($options, ['url', 'secret', 'timeout_seconds'], 'the webhook channel');
         $this->url = (string) $options['url'];
@@ -33,7 +34,7 @@ final class WebhookChannel implements Channel
         }
         $this->key = self::key((string) $options['secret']);
         $this->headers = array_map('strval', (array) ($options['headers'] ?? []));
-        $this->http = new Http((int) $options['timeout_seconds']);
+        $this->http = new Http((int) $options['timeout_seconds'], $addressGuard);
     }
 
     public function send(Request $request): ChannelResult

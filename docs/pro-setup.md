@@ -94,11 +94,21 @@ docker compose exec web php bin/formgate project:create Dev localhost email \
 - `project:set <ключ> <путь> <значение>` — одна настройка. Путь — один из `project.thank_you_url`, `project.error_url`, `project.duplicate_window_seconds`, `project.rate_limit.requests`, `project.rate_limit.window_seconds`, `project.required`, `project.require_token`, `project.token_min_seconds`, `project.token_max_seconds` или `limits.<имя>` (например, `limits.max_fields`). Пример: `project:set <ключ> project.thank_you_url https://site.ru/spasibo`. Срок хранения в Pro общий для всех проектов (`FORMGATE_RETENTION_DAYS`, раздел 4, «Очередь, повторы, хранение и оповещения»); `project.retention_days` в Pro `project:set` отклоняет.
 - `project:domain:add <ключ> <домен>` — разрешить ещё один домен.
 - `project:domain:remove <ключ> <домен>` — убрать домен.
-- `project:channel:add <ключ> <тип> -o ...` — добавить канал (`telegram`, `email`, `bitrix24`).
+- `project:channel:add <ключ> <тип> -o ...` — добавить канал (`telegram`, `email`, `bitrix24`, `webhook`).
 - `project:channel:change <ключ> <номер> -o ...` — изменить параметры канала; первый номер — 1.
 - `project:channel:remove <ключ> <номер>` — убрать канал. Каналы после него получают меньшие номера. Поэтому команда отказывает, если частный случай ссылается на этот канал или на канал после него по номеру: она называет случай, файл не меняется. Сначала уберите или измените случай.
 - `project:self-check <ключ> [--send]` — проверить каналы (и ключ подписи метки времени, когда проверка включена); `--send` шлёт тестовое сообщение в каждый канал.
 - `project:delete <ключ> [--yes]` — удалить проект; без `--yes` команда спросит.
+
+### Канал webhook
+
+Опции канала `webhook` — `docs/lite-setup.md`, раздел 7. В Pro у канала три отличия от Lite.
+
+**Защита от частных адресов.** Перед записью канала (`project:create`, `project:channel:add`, `project:channel:change`, admin API) и перед каждой доставкой Pro один раз разрешает хост из `url`. Хост отклоняется, если хоть один его адрес не публичный: loopback, частный (RFC 1918, `fc00::/7`), link-local, нулевой и другие. Отказ называет хост: команда завершается с ненулевым кодом, admin API отвечает `422 invalid`, файл проекта не меняется. При доставке отказ — неудачная попытка с этой причиной: она идёт в повторы и оповещения, как любая неудача. Соединение идёт только на проверенный адрес, второго DNS-запроса нет. Поэтому ответ DNS, сменившийся между проверкой и соединением, не уводит заявку во внутреннюю сеть. Получатель на этом же сервере или в частной сети: `FORMGATE_WEBHOOK_ALLOW_PRIVATE=1` в `.env`, затем `docker compose up -d`. Это выключает защиту для всех проектов.
+
+**Повторы.** Каждая попытка доставки одной заявки шлёт тот же `webhook-id` — это `request_id` заявки. По нему получатель отбрасывает дубль. `webhook-timestamp` и подпись каждая попытка делает заново.
+
+**Секреты.** В `project:show`, ответах admin API и самопроверке `url`, `secret` и значение каждого заголовка из `headers` скрыты (`***`). Имена заголовков видны.
 
 ### Частные случаи
 

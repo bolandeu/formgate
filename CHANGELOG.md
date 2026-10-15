@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.19.0 — 2026-10-15
+
+### Webhook channel: a signed JSON request to any receiver, Lite and Pro
+
+The operator adds a channel of type webhook with a receiver URL and a secret; each request arrives there as one versioned JSON body signed by the Standard Webhooks scheme; the receiver checks the signature with a ready library; Pro repeats a failed delivery with the same webhook-id.
+
+- Webhook channel in Pro: private-address guard, masked secrets, same webhook-id on repeats
+
 ## v0.18.0 — 2026-10-15
 
 ### Webhook channel: a signed JSON request to any receiver, Lite and Pro

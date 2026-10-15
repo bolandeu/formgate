@@ -18,7 +18,7 @@ use RuntimeException;
 
 final class AdminProjects
 {
-    public function __construct(private readonly ProjectRegistry $registry)
+    public function __construct(private readonly ProjectRegistry $registry, private readonly ProjectChannels $channels)
     {
     }
 
@@ -29,7 +29,7 @@ final class AdminProjects
             [$key, $isNew] = $this->registry->createForExternalId(
                 $input['external_id'],
                 ProjectChanges::newProject($input['name'], $input['domain'], $input['channel']['type'], $input['channel']['options']),
-                ProjectChannels::verifyLast(...),
+                $this->channels->verifyLast(...),
             );
         } catch (InvalidArgumentException | RuntimeException $refusal) {
             return self::invalid($refusal);

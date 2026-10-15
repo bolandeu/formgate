@@ -84,6 +84,14 @@ final class ProConfig
         return array_values(array_filter(array_map(trim(...), explode(',', $this->values['FORMGATE_ADMIN_KEYS'])), fn (string $key): bool => $key !== ''));
     }
 
+    /** True when a webhook channel may send to a receiver on this server or on a private network. */
+    public function webhookAllowPrivate(): bool
+    {
+        $name = 'FORMGATE_WEBHOOK_ALLOW_PRIVATE';
+        return filter_var($this->values[$name], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+            ?? throw new RuntimeException("config: {$name} must be on or off (1/0, true/false), got '{$this->values[$name]}'");
+    }
+
     /**
      * The options of the operator alert bot, or null when no token is set.
      *

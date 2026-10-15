@@ -37,10 +37,11 @@ final class ChannelChangeCommand extends Command
     {
         $number = (int) $input->getArgument('number');
         $options = ProjectChannels::options($input->getOption('option'));
+        $channels = ProjectChannels::fromConfig($this->config);
         (new ProjectRegistry($this->config->projectsDir()))->change(
             (string) $input->getArgument('key'),
             fn (array $values): array => ProjectChanges::changeChannel($values, $number, $options),
-            fn (Settings $settings) => ProjectChannels::verify($settings, $number),
+            fn (Settings $settings) => $channels->verify($settings, $number),
         );
         $output->writeln("Channel {$number} changed.");
         return Command::SUCCESS;

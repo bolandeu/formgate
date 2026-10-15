@@ -1,13 +1,17 @@
 <?php
 // The channel side of the project edits: the options a CLI call gives as `name=value` words, and the check that a
 // channel of validated settings can be built, so a channel with a missing option (a telegram channel with no chat_id)
-// is refused before the registry writes.
+// is refused before the registry writes. The check also asks the private-address guard about the url host of a
+// webhook channel, unless FORMGATE_WEBHOOK_ALLOW_PRIVATE turns the guard off.
 
 declare(strict_types=1);
 
 namespace Formgate\Pro\Projects;
 
+use Formgate\Channels\AddressGuard;
 use Formgate\Channels\ChannelFactory;
+use Formgate\Pro\Channels\PrivateAddressGuard;
+use Formgate\Pro\Config\ProConfig;
 use Formgate\Settings\Settings;
 use InvalidArgumentException;
 
@@ -15,6 +19,15 @@ final class ProjectChannels
 {
     /** The help of the CLI option that gives one `name=value` word to options(). */
     public const OPTION_HELP = 'A channel option as name=value; a value of [..] or {..} is JSON';
+
+    private function __construct(private readonly ?AddressGuard $addressGuard)
+    {
+    }
+
+    public static function fromConfig(ProConfig $config): self
+    {
+        return new self(PrivateAddressGuard::fromConfig($config));
+    }
 
     /**
      * Options from `name=value` words. A value that starts with `[` or `{` is read as JSON (a list of recipients, a
@@ -36,17 +49,23 @@ final class ProjectChannels
         return $options;
     }
 
-    /** Builds the channel with the given number (the first is 1) from the settings; a missing option throws. */
-    public static function verify(Settings $settings, int $number): void
+    /**
+     * Builds the channel with the given number (the first is 1) from the settings; a missing option throws, and so
+     * does a webhook url host that the guard refuses.
+     */
+    public function verify(Settings $settings, int $number): void
     {
         $channel = $settings->channels()[$number - 1];
         (new ChannelFactory())->create($channel['type'], $channel['options']);
+        if ($channel['type'] === 'webhook' && $this->addressGuard !== null) {
+            $this->addressGuard->addressOf(trim((string) parse_url((string) $channel['options']['url'], PHP_URL_HOST), '[]'));
+        }
     }
 
-    /** Builds the last channel of the settings, the one that create and add write; a missing option throws. */
-    public static function verifyLast(Settings $settings): void
+    /** Builds the last channel of the settings, the one that create and add write; as verify() it throws to refuse. */
+    public function verifyLast(Settings $settings): void
     {
-        self::verify($settings, count($settings->channels()));
+        $this->verify($settings, count($settings->channels()));
     }
 
     private static function value(string $name, string $value): mixed

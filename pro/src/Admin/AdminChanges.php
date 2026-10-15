@@ -24,6 +24,7 @@ final class AdminChanges
     public function __construct(
         private readonly ProjectRegistry $registry,
         private readonly AdminProjects $projects,
+        private readonly ProjectChannels $channels,
         private readonly SigningKey $signingKey,
     ) {
     }
@@ -47,7 +48,7 @@ final class AdminChanges
                 throw new InvalidArgumentException('name: must be a string');
             }
             return ProjectChanges::addChannel($values, AdminBody::text($input, 'type'), self::options($input), $name);
-        }, ProjectChannels::verifyLast(...));
+        }, $this->channels->verifyLast(...));
     }
 
     public function changeChannel(string $key, int $number, string $body): Response
@@ -55,7 +56,7 @@ final class AdminChanges
         return $this->change(
             $key,
             fn (array $values): array => ProjectChanges::changeChannel($values, $number, self::options(AdminBody::object($body))),
-            fn (Settings $settings) => ProjectChannels::verify($settings, $number),
+            fn (Settings $settings) => $this->channels->verify($settings, $number),
         );
     }
 

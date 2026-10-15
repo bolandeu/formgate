@@ -2,6 +2,7 @@
 // One delivery attempt of a queued request, per channel: only the channels that did not accept the request yet get
 // it. The results join the earlier ones, count for the channel states and are stored. On the schedule the request
 // waits for the next repeat, and after the last one the operator gets an alert; a manual repeat has no schedule.
+// A webhook channel sends through the private-address guard, unless FORMGATE_WEBHOOK_ALLOW_PRIVATE turns it off.
 
 declare(strict_types=1);
 
@@ -13,6 +14,7 @@ use Formgate\Channels\DeliveryReport;
 use Formgate\Channels\DeliveryStatus;
 use Formgate\Pro\Alerts\ChannelStates;
 use Formgate\Pro\Alerts\OperatorAlerts;
+use Formgate\Pro\Channels\PrivateAddressGuard;
 use Formgate\Pro\Config\ProConfig;
 use Formgate\Pro\Projects\ProjectRegistry;
 use Formgate\Pro\Queue\Database;
@@ -30,6 +32,7 @@ final class RequestDelivery
         private readonly ChannelStates $states,
         private readonly RepeatSchedule $schedule,
         private readonly OperatorAlerts $alerts,
+        private readonly ChannelFactory $channels,
     ) {
     }
 
@@ -42,6 +45,7 @@ final class RequestDelivery
             new ChannelStates($db, $alerts, $config->channelDownAfterFailures()),
             new RepeatSchedule($config->repeatScheduleSeconds()),
             $alerts,
+            new ChannelFactory(PrivateAddressGuard::fromConfig($config)),
         );
     }
 
@@ -74,7 +78,7 @@ final class RequestDelivery
             $settings = $this->projects->find($queued->projectKey)
                 ?? throw new RuntimeException("no project {$queued->projectKey}");
             $request = $queued->request($settings->timezone());
-            foreach ((new Router($settings, new ChannelFactory()))->channelsFor($request) as $channelName => $channel) {
+            foreach ((new Router($settings, $this->channels))->channelsFor($request) as $channelName => $channel) {
                 if (!$queued->isDeliveredTo($channelName)) {
                     $result = $channel->send($request);
                     $report->add($channelName, $result);

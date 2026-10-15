@@ -46,7 +46,7 @@ final class CreateCommand extends Command
             (string) $input->getArgument('domain'),
             $type,
             ProjectChannels::options($input->getOption('option')),
-        ), ProjectChannels::verifyLast(...));
+        ), ProjectChannels::fromConfig($this->config)->verifyLast(...));
         $output->writeln("Key: {$key}");
         $output->writeln("Form address: /f/{$key}");
         return Command::SUCCESS;

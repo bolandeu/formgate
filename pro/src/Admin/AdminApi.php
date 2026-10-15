@@ -10,6 +10,7 @@ namespace Formgate\Pro\Admin;
 
 use Formgate\Intake\HttpRequest;
 use Formgate\Pro\Config\ProConfig;
+use Formgate\Pro\Projects\ProjectChannels;
 use Formgate\Pro\Projects\ProjectRegistry;
 use Formgate\Pro\Token\EnvironmentSigningKey;
 use Formgate\Response\Response;
@@ -33,8 +34,9 @@ final class AdminApi
             return Response::json(401, ['ok' => false, 'code' => 'unauthorized']);
         }
         $registry = new ProjectRegistry($this->config->projectsDir());
-        $projects = new AdminProjects($registry);
-        $changes = new AdminChanges($registry, $projects, new EnvironmentSigningKey($this->config));
+        $channels = ProjectChannels::fromConfig($this->config);
+        $projects = new AdminProjects($registry, $channels);
+        $changes = new AdminChanges($registry, $projects, $channels, new EnvironmentSigningKey($this->config));
         $externalId = $http->query['external_id'] ?? null;
         $confirmed = ($http->query['confirm'] ?? null) === 'true';
         $route = $http->method . ' ' . $path;

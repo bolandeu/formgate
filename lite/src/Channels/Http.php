@@ -1,7 +1,8 @@
 <?php
 // A small HTTP client for channels (ADR 0001): POST through curl, or through PHP streams when the hosting has
 // no curl. A transport error throws; any HTTP status comes back with the body. A redirect is never followed:
-// its status comes back as the answer.
+// its status comes back as the answer. With an address guard (Pro) the client asks the guard for the address of the
+// url host and makes curl connect only to it, with no second DNS look-up.
 
 declare(strict_types=1);
 
@@ -11,7 +12,7 @@ use RuntimeException;
 
 final class Http
 {
-    public function __construct(private readonly int $timeoutSeconds)
+    public function __construct(private readonly int $timeoutSeconds, private readonly ?AddressGuard $addressGuard = null)
     {
     }
 
@@ -35,7 +36,8 @@ final class Http
         foreach ($headers as $name => $value) {
             $lines[] = "{$name}: {$value}";
         }
-        return function_exists('curl_init')
+        // Only curl can pin the checked address, so a guarded post always goes through curl.
+        return function_exists('curl_init') || $this->addressGuard !== null
             ? $this->postWithCurl($url, $body, $lines)
             : $this->postWithStreams($url, $body, $lines);
     }
@@ -46,8 +48,9 @@ final class Http
      */
     private function postWithCurl(string $url, string $body, array $headers): array
     {
+        $pinned = $this->addressGuard === null ? [] : [CURLOPT_RESOLVE => [self::pinnedAddress($this->addressGuard, $url)]];
         $curl = curl_init($url);
-        curl_setopt_array($curl, [
+        curl_setopt_array($curl, $pinned + [
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => $body,
             CURLOPT_HTTPHEADER => $headers,
@@ -60,6 +63,16 @@ final class Http
             throw new RuntimeException('curl: ' . curl_error($curl));
         }
         return ['status' => (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE), 'body' => $answer];
+    }
+
+    /** The curl resolve entry `host:port:address` with the address that the guard checked for the url host. */
+    private static function pinnedAddress(AddressGuard $addressGuard, string $url): string
+    {
+        $parts = parse_url($url);
+        $host = (string) ($parts['host'] ?? '');
+        $port = $parts['port'] ?? (($parts['scheme'] ?? '') === 'http' ? 80 : 443);
+        $address = $addressGuard->addressOf(trim($host, '[]'));
+        return "{$host}:{$port}:" . (str_contains($address, ':') ? "[{$address}]" : $address);
     }
 
     /**
