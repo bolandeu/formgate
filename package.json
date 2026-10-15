@@ -1,6 +1,6 @@
 {
   "name": "formgate",
-  "version": "0.17.3",
+  "version": "0.17.4",
   "license": "MIT",
   "description": "Form gateway: Lite PHP handler, client and Astro integration",
   "type": "module",
@@ -9,7 +9,7 @@
     "prepack": "pnpm run build",
     "test": "vitest run"
   },
-  "packageManager": "pnpm@12.9.1",
+  "packageManager": "pnpm@12.11.2",
   "exports": {
     "./client": {
       "types": "./dist/client/index.d.ts",

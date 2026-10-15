@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.17.4 — 2026-10-15
+
+### Outside epics
+
+- packageManager: pnpm 12.11.2, the version baked into the CI runner image
+
 ## v0.17.3 — 2026-10-15
 
 ### Outside epics
