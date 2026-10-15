@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.10.6 — 2026-10-15
+
+### Outside epics
+
+- Release: the npm package must carry the Lite vendor folder
+
 ## v0.10.5 — 2026-10-15
 
 ### Public GitHub mirror and npm package formgate
