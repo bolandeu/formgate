@@ -199,3 +199,8 @@ export function postJson(url: string, fields: Record<string, unknown>, headers: 
 export function postFormForJson(url: string, fields: Record<string, string | string[]>) {
   return postForm(url, fields, { Accept: 'application/json' });
 }
+
+// `count` fields named `<prefix>0`, `<prefix>1`, … with the value `x`: a form at a field count limit.
+export function numberedFields(prefix: string, count: number): Record<string, string> {
+  return Object.fromEntries(Array.from({ length: count }, (_, index) => [`${prefix}${index}`, 'x']));
+}

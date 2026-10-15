@@ -4,7 +4,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { postJson, requestToken } from '../../support/lite.ts';
+import { numberedFields, postJson, requestToken } from '../../support/lite.ts';
 import { createProFolders, type Pro, type ProFolders, startPro } from '../../support/pro.ts';
 import { createProject, printedKey, projectFile, runProject, telegramChannel } from '../../support/pro-projects.ts';
 
@@ -172,6 +172,19 @@ describe('project:set', () => {
     expect(run.stderr).toContain('project.thank_you_url');
     expect(run.stderr).not.toContain('.tmp');
     expect(projectFile(folders, key)).toBe(before);
+  });
+});
+
+describe('project:set for the meta_ limits', () => {
+  it('limits.max_meta_fields 30: 30 meta_ fields pass and 31 get 413', async () => {
+    const key = await createProject(folders, 'Acme', 'site.ru');
+    expect((await runProject(folders, 'set', [key, 'limits.max_meta_fields', '30'])).status).toBe(0);
+
+    const within = await postJson(pro.formUrl(key), { ...visitorForm, ...numberedFields('meta_f', 30) }, fromOrigin('https://site.ru'));
+    const over = await postJson(pro.formUrl(key), { ...visitorForm, ...numberedFields('meta_f', 31) }, fromOrigin('https://site.ru'));
+
+    expect(within.status).toBe(200);
+    expect(over.status).toBe(413);
   });
 });
 

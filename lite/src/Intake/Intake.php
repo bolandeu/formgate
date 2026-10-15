@@ -13,6 +13,12 @@ use Formgate\Settings\Settings;
 
 final class Intake
 {
+    /** The kind of field => the names of its count limit and its value length limit. */
+    private const LIMITS = [
+        'visitor' => ['max_fields', 'max_value_length'],
+        'analytics' => ['max_meta_fields', 'max_meta_value_length'],
+    ];
+
     public function __construct(private readonly Settings $settings)
     {
     }
@@ -35,20 +41,24 @@ final class Intake
     }
 
     /**
-     * Joins each field to one text value and checks the field count and the value length.
+     * Joins each field to one text value and checks the count and the value length of the visitor fields and,
+     * apart, of the analytics fields (meta_*).
      *
      * @param array<array-key, mixed> $raw
      * @return array<string, string>
      */
     private function values(array $raw): array
     {
-        if (count($raw) > $this->settings->limit('max_fields')) {
-            throw new Rejection(ErrorCode::PayloadTooLarge);
-        }
         $values = [];
+        $counts = ['visitor' => 0, 'analytics' => 0];
         foreach ($raw as $name => $value) {
+            $kind = Request::isAnalytics((string) $name) ? 'analytics' : 'visitor';
+            [$maxFields, $maxValueLength] = self::LIMITS[$kind];
             $values[(string) $name] = self::text($value);
-            if (mb_strlen($values[(string) $name]) > $this->settings->limit('max_value_length')) {
+            if (
+                ++$counts[$kind] > $this->settings->limit($maxFields)
+                || mb_strlen($values[(string) $name]) > $this->settings->limit($maxValueLength)
+            ) {
                 throw new Rejection(ErrorCode::PayloadTooLarge);
             }
         }

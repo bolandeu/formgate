@@ -6,6 +6,8 @@ export const rules = {
   phoneDigitsMax: fieldRules.phone_digits_max,
   maxValueLength: fieldRules.max_value_length,
   maxFields: fieldRules.max_fields,
+  maxMetaFields: fieldRules.max_meta_fields,
+  maxMetaValueLength: fieldRules.max_meta_value_length,
   maxBodyBytes: fieldRules.max_body_bytes,
 };
 

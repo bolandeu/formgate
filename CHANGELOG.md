@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.14.0 — 2026-10-15
+
+### Analytics fields: meta_ fields to storage and CRM, a short source block for managers, server request data
+
+A site sends any number (up to 50) of meta_ fields. They are stored in full with the request and the spam log. Bitrix24 leads get UTM in the standard UTM fields and the other analytics in SOURCE_DESCRIPTION, with COMMENTS for the visitor's fields only. Telegram and email show the visitor's fields first and then a short source block (source, page, referrer). Each request also keeps server data: request id, IP, User-Agent, origin host, under the same retention.
+
+- Analytics fields: meta_ limits, the source block in Telegram and email, UTM and SOURCE_DESCRIPTION in Bitrix24
+
 ## v0.13.0 — 2026-10-15
 
 ### Site integration kit: test delivery, machine self-check, form texts, shared field rules, outbox switch

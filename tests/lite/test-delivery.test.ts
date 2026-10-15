@@ -73,6 +73,18 @@ describe('with FORMGATE_TEST_DELIVERY_FILE set', () => {
     expect(lines[0].service).toEqual({ subject: '', reply_to: 'email', redirect: '' });
   });
 
+  it('with meta_ fields keeps the consent line as consent and all meta_ fields in fields', async () => {
+    const file = join(outputDir, 'out.jsonl');
+    const lite = await startWithDeliveryFile(file);
+    const analytics = { meta_utm_source: 'yandex', meta_page: 'https://site.ru/price', meta_referrer: 'https://ya.ru/', meta_yclid: '123' };
+
+    await postFormForJson(lite.url, { ...visitorForm, ...analytics });
+
+    const [line] = linesOf(file);
+    expect(line.consent).toMatch(/^Согласие на обработку ПД: дано \d\d\.\d\d\.\d{4} \d\d:\d\d$/);
+    expect(line.fields).toMatchObject(analytics);
+  });
+
   it('writes no line for a honeypot request or for a duplicate of a delivered request', async () => {
     const file = join(outputDir, 'out.jsonl');
     const lite = await startWithDeliveryFile(file, { duplicate_window_seconds: 600 });

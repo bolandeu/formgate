@@ -43,7 +43,6 @@ final class TestDelivery implements Delivery
     /** @return array<string, mixed> */
     private function entry(Request $request, Route $route): array
     {
-        $lines = $request->lines();
         return [
             'time' => $request->receivedAt->format(DATE_ATOM),
             'form' => $request->service->form,
@@ -53,7 +52,7 @@ final class TestDelivery implements Delivery
                 'reply_to' => $request->service->replyTo,
                 'redirect' => $request->service->redirect,
             ],
-            'consent' => end($lines),
+            'consent' => $request->consentLine(),
             'channels' => array_map(
                 fn (array $channel): array => array_diff_key($channel, ['label' => true]),
                 $this->channels($route),

@@ -1,6 +1,7 @@
 <?php
 // The Bitrix24 channel: one lead per request through an incoming webhook (crm.lead.add). A field named in `map`
-// goes to its lead field; every other field and the consent line go as text into COMMENTS.
+// goes to its lead field. The other visitor fields and the consent line go as text into COMMENTS. The meta_utm_*
+// fields go to the UTM_* lead fields; the other meta_ fields go as `name: value` lines into SOURCE_DESCRIPTION.
 // Options: webhook_url, map (request field => lead field), timeout_seconds, default_title (TITLE when no __subject).
 
 declare(strict_types=1);
@@ -14,6 +15,15 @@ final class Bitrix24Channel implements Channel
 {
     /** Lead fields that Bitrix24 keeps as lists of {VALUE, VALUE_TYPE}. */
     private const MULTI_FIELDS = ['PHONE', 'EMAIL', 'WEB', 'IM'];
+
+    /** Analytics fields that have a standard lead field of their own. */
+    private const UTM_FIELDS = [
+        'meta_utm_source' => 'UTM_SOURCE',
+        'meta_utm_medium' => 'UTM_MEDIUM',
+        'meta_utm_campaign' => 'UTM_CAMPAIGN',
+        'meta_utm_content' => 'UTM_CONTENT',
+        'meta_utm_term' => 'UTM_TERM',
+    ];
 
     private readonly string $addLeadUrl;
     /** @var array<string, string> */
@@ -53,8 +63,29 @@ final class Bitrix24Channel implements Channel
                 $fields[$leadField] = $this->leadValue($leadField, $request->field($name));
             }
         }
-        $fields['COMMENTS'] = implode("\n", $request->lines(array_keys($this->map)));
+        foreach (array_diff_key(self::UTM_FIELDS, $this->map) as $name => $leadField) {
+            if ($request->field($name) !== '') {
+                $fields[$leadField] = $request->field($name);
+            }
+        }
+        $description = $this->sourceDescription($request);
+        if ($description !== '') {
+            $fields['SOURCE_DESCRIPTION'] = $description;
+        }
+        $fields['COMMENTS'] = implode("\n", $request->visitorLines(array_keys($this->map)));
         return $fields;
+    }
+
+    /** The meta_ fields that no lead field takes, one `name: value` line each. */
+    private function sourceDescription(Request $request): string
+    {
+        $lines = [];
+        foreach (array_diff_key($request->analyticsFields(), $this->map, self::UTM_FIELDS) as $name => $value) {
+            if (trim($value) !== '') {
+                $lines[] = "{$name}: {$value}";
+            }
+        }
+        return implode("\n", $lines);
     }
 
     /** @return string|list<array{VALUE: string, VALUE_TYPE: string}> */

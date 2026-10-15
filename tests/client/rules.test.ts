@@ -10,6 +10,8 @@ describe('rules', () => {
       phoneDigitsMax: 15,
       maxValueLength: 10000,
       maxFields: 100,
+      maxMetaFields: 50,
+      maxMetaValueLength: 2000,
       maxBodyBytes: 102400,
     });
   });
