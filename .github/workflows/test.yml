@@ -16,10 +16,10 @@ jobs:
           extensions: curl, mbstring, pdo_sqlite
           tools: composer
           coverage: none
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v5
         with:
           node-version: lts/*
-      - name: pnpm
-        run: corepack enable && corepack prepare pnpm@latest --activate
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test

@@ -16,8 +16,15 @@ describe('GitHub workflow of the public repo', () => {
     expect(github.jobs.test.strategy.matrix.php).toEqual(['8.1', 'latest'])
     expect(php.with['php-version']).toBe('${{ matrix.php }}')
     expect(php.with.tools).toBe('composer')
-    expect(steps.some((step) => String(step.uses).startsWith('actions/setup-node@'))).toBe(true)
-    expect(steps.some((step) => String(step.run).includes('pnpm'))).toBe(true)
+  })
+
+  it('sets up pnpm before setup-node, which caches the pnpm store', () => {
+    const pnpmIndex = steps.findIndex((step) => String(step.uses).startsWith('pnpm/action-setup@v4'))
+    const nodeIndex = steps.findIndex((step) => String(step.uses).startsWith('actions/setup-node@'))
+    expect(pnpmIndex).toBeGreaterThanOrEqual(0)
+    expect(pnpmIndex).toBeLessThan(nodeIndex)
+    expect(steps[nodeIndex].with).toEqual({ 'node-version': 'lts/*', cache: 'pnpm' })
+    expect(steps.some((step) => String(step.run).includes('corepack prepare'))).toBe(false)
   })
 
   it('ends with a frozen install and the tests', () => {
