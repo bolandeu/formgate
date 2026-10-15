@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.20.8 — 2026-10-15
+
+### Outside epics
+
+- CI: main is green again — composer cache dir without a root composer.json, internal CI tests out of the public tree
+
 ## v0.20.7 — 2026-10-15
 
 ### Outside epics
