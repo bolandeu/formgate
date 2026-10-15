@@ -31,3 +31,39 @@ describe('GitHub workflow of the public repo', () => {
     expect(steps.slice(-2).map((step) => step.run)).toEqual(['pnpm install --frozen-lockfile', 'pnpm test'])
   })
 })
+
+describe('Gitea workflows survive a slow network', () => {
+  const storeCache = (job: any) => job.steps.find((step: any) => step.uses === 'actions/cache@v4' && step.with.key.startsWith('pnpm-'))
+
+  it('publish restores and saves the pnpm store before the release step', () => {
+    const publish = parse(readFileSync('.gitea/workflows/publish.yml', 'utf8')).jobs.publish
+    const cache = storeCache(publish)
+    expect(cache.with).toEqual({
+      path: '${{ steps.pnpm-store.outputs.path }}',
+      key: "pnpm-${{ hashFiles('pnpm-lock.yaml') }}",
+      'restore-keys': 'pnpm-',
+    })
+    expect(publish.steps.indexOf(cache)).toBeLessThan(publish.steps.findIndex((step: any) => step.name === 'release'))
+  })
+
+  it('test jobs fail on an empty pnpm store path before the cache step', () => {
+    const jobs = parse(readFileSync('.gitea/workflows/test.yml', 'utf8')).jobs
+    for (const job of [jobs.test, jobs['public-tree']]) {
+      const lookup = job.steps.find((step: any) => step.id === 'pnpm-store')
+      expect(lookup.run).toContain('test -n "$store"')
+      expect(job.steps.indexOf(lookup)).toBeLessThan(job.steps.indexOf(storeCache(job)))
+    }
+  })
+
+  it('.npmrc sets the fetch retries and timeouts', () => {
+    const settings = Object.fromEntries(
+      readFileSync('.npmrc', 'utf8').split('\n').filter(Boolean).map((line) => line.split('=')),
+    )
+    expect(settings).toEqual({
+      'fetch-retries': '5',
+      'fetch-retry-mintimeout': '10000',
+      'fetch-retry-maxtimeout': '120000',
+      'fetch-timeout': '300000',
+    })
+  })
+})

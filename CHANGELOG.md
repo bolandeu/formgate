@@ -1,10 +1,16 @@
 # Changelog
 
+## v0.17.3 — 2026-10-15
+
+### Outside epics
+
+- CI: pnpm store cache in publish and fetch retries, so a slow network does not break a release
+
 ## v0.17.2 — 2026-10-15
 
 ### Cleanup: current docs only, no server paths in the JSON self-check
 
-Every doc of the repo says what the code does now, once, in the right place; a done plan or backlog item is gone; the public docs say nothing about private repos; the JSON self-check gives where the settings are, not the server path.
+Every doc of the repo says what the code does now, once, in the right place; a done plan or backlog item is gone; the public docs name nothing private; the JSON self-check gives where the settings are, not the server path.
 
 - Pro: project:set refuses project.retention_days; retention stays global
 
@@ -12,7 +18,7 @@ Every doc of the repo says what the code does now, once, in the right place; a d
 
 ### Cleanup: current docs only, no server paths in the JSON self-check
 
-Every doc of the repo says what the code does now, once, in the right place; a done plan or backlog item is gone; the public docs say nothing about private repos; the JSON self-check gives where the settings are, not the server path.
+Every doc of the repo says what the code does now, once, in the right place; a done plan or backlog item is gone; the public docs name nothing private; the JSON self-check gives where the settings are, not the server path.
 
 - Docs sweep: every doc says what the code does now, once, with nothing done-as-future
 
@@ -20,7 +26,7 @@ Every doc of the repo says what the code does now, once, in the right place; a d
 
 ### Cleanup: current docs only, no server paths in the JSON self-check
 
-Every doc of the repo says what the code does now, once, in the right place; a done plan or backlog item is gone; the public docs say nothing about private repos; the JSON self-check gives where the settings are, not the server path.
+Every doc of the repo says what the code does now, once, in the right place; a done plan or backlog item is gone; the public docs name nothing private; the JSON self-check gives where the settings are, not the server path.
 
 - Lite JSON self-check: drop the settings file path, keep found and where
 
