@@ -13,6 +13,10 @@ use RuntimeException;
 
 final class Settings
 {
+    /** The range of project.pow_max_number: lower is no work, higher stalls a phone. */
+    private const POW_MAX_NUMBER_FROM = 1000;
+    private const POW_MAX_NUMBER_TO = 10000000;
+
     /** @param array<string, mixed> $values */
     private function __construct(private readonly array $values, private readonly string $file)
     {
@@ -140,6 +144,18 @@ final class Settings
         return (int) $this->values['project']['token_max_seconds'];
     }
 
+    /** True when a request also needs the solved ALTCHA challenge of its token. */
+    public function requiresPow(): bool
+    {
+        return (bool) $this->values['project']['require_pow'];
+    }
+
+    /** The largest number that the client tries to solve the challenge: it bounds the work. */
+    public function powMaxNumber(): int
+    {
+        return (int) $this->values['project']['pow_max_number'];
+    }
+
     /** Days to keep stored requests and the spam log; null keeps them forever. */
     public function retentionDays(): ?int
     {
@@ -228,9 +244,16 @@ final class Settings
             $redirects || $project['plain_form_answer'] === 'json' ? null : 'project.plain_form_answer',
             !$redirects || self::isSet($project['thank_you_url']) ? null : 'project.thank_you_url',
             !$redirects || self::isSet($project['error_url']) ? null : 'project.error_url',
+            !$project['require_pow'] || $project['require_token'] ? null : 'project.require_pow (needs project.require_token)',
+            self::isPowMaxNumber($project['pow_max_number']) ? null : 'project.pow_max_number',
             self::isListOf($project['required'], is_string(...)) ? null : 'project.required',
             !self::hasAlertBot($this->values['alert']) || self::isSet($project['name']) ? null : 'project.name',
         ]));
+    }
+
+    private static function isPowMaxNumber(mixed $value): bool
+    {
+        return is_int($value) && $value >= self::POW_MAX_NUMBER_FROM && $value <= self::POW_MAX_NUMBER_TO;
     }
 
     private static function isListOf(mixed $value, callable $isItem): bool

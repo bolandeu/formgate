@@ -32,6 +32,8 @@ final class SelfCheckJson
                 'key_present' => $signingKey->exists(),
                 'min_seconds' => $settings->tokenMinSeconds(),
                 'max_seconds' => $settings->tokenMaxSeconds(),
+                'pow_required' => $settings->requiresPow(),
+                'pow_max_number' => $settings->powMaxNumber(),
             ],
             'test_delivery' => TestDeliveryFile::path() !== null,
             'findings' => array_map(

@@ -7,6 +7,7 @@ import { type IncomingHttpHeaders, createServer as createHttpServer } from 'node
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { solveChallenge } from 'altcha-lib/v1';
 import { startPhpServer } from './php-server.ts';
 
 const liteDir = fileURLToPath(new URL('../../lite/', import.meta.url));
@@ -222,6 +223,22 @@ export async function send(url: string, init: RequestInit = {}, withOrigin = tru
 // another is given.
 export function requestToken(url: string, origin = projectOrigin) {
   return send(`${url}?token`, { method: 'GET', headers: { Origin: origin } });
+}
+
+// The challenge object of GET ?token (the ALTCHA protocol, v1).
+export interface Challenge {
+  algorithm: string;
+  challenge: string;
+  maxnumber: number;
+  salt: string;
+  signature: string;
+}
+
+// The ALTCHA payload (`__pow`) of a challenge from GET ?token, solved the way the widget does.
+export async function solvePow({ algorithm, challenge, maxnumber, salt, signature }: Challenge): Promise<string> {
+  const solution = await solveChallenge(challenge, salt, algorithm, maxnumber).promise;
+  if (!solution) throw new Error('the challenge has no solution');
+  return Buffer.from(JSON.stringify({ algorithm, challenge, number: solution.number, salt, signature })).toString('base64');
 }
 
 // Posts fields as a plain HTML form (urlencoded); a field given as an array is sent as `name[]` values.

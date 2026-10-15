@@ -23,6 +23,11 @@ return [
         'require_token' => false,
         'token_min_seconds' => 5,
         'token_max_seconds' => 7200,
+        // ALTCHA proof-of-work (docs/integration.md, section 6): when on, a request also needs the solved challenge of
+        // its token in __pow. Needs require_token. pow_max_number (1000 to 10000000) bounds the work: the client
+        // tries up to that many numbers.
+        'require_pow' => false,
+        'pow_max_number' => 50000,
         // The answer to a plain form post (no JSON body, no Accept: application/json): 'redirect' gives a 303 to
         // thank_you_url or error_url, both then required; 'json' gives the JSON answer, as to fetch.
         'plain_form_answer' => 'redirect',

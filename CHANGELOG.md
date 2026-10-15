@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.20.1 — 2026-10-15
+
+### Free self-hosted captcha: ALTCHA proof-of-work in the time token, invisible by default, widget on request
+
+With require_pow on, each request costs the sender a small proof-of-work solved by the formgate client in the background (about half a second on a phone); a request without a valid solution goes to the spam log, not lost; a site can show the ALTCHA widget instead with one form attribute; no external service, no new account.
+
+- ALTCHA proof-of-work on the server (core and Lite): challenge in GET ?token, __pow check, spam reasons, settings
+
 ## v0.20.0 — 2026-10-15
 
 ### Free self-hosted captcha: ALTCHA proof-of-work in the time token, invisible by default, widget on request

@@ -142,7 +142,7 @@ describe('with the right key', () => {
 
     expect(rows.get('Time token')).toEqual({
       level: 'ok',
-      detail: 'check on, signing key present, token age from 5 s to 7200 s',
+      detail: 'check on, signing key present, token age from 5 s to 7200 s, proof-of-work off (max number 50000)',
     });
     const keyFile = readFileSync(join(lite.site.above, 'formgate-token-key.jsonl'), 'utf8');
     const secret = String(JSON.parse(keyFile).secret);
@@ -158,7 +158,7 @@ describe('with the right key', () => {
 
     expect(rows.get('Time token')).toEqual({
       level: 'warning',
-      detail: 'check on, signing key missing (the first token request makes it), token age from 5 s to 7200 s',
+      detail: 'check on, signing key missing (the first token request makes it), token age from 5 s to 7200 s, proof-of-work off (max number 50000)',
     });
   });
 
@@ -309,7 +309,7 @@ describe('as JSON (Accept: application/json)', () => {
       { number: 3, type: 'email', name: null, configured: true },
     ]);
     expect(body.storage).toEqual({ backend: 'sqlite', writable: true });
-    expect(body.token).toEqual({ required: false, key_present: false, min_seconds: 5, max_seconds: 7200 });
+    expect(body.token).toEqual({ required: false, key_present: false, min_seconds: 5, max_seconds: 7200, pow_required: false, pow_max_number: 50000 });
     expect(body.test_delivery).toBe(false);
     expect(body.findings).toContainEqual({ label: 'Storage', level: 'ok', detail: 'sqlite' });
     expect(text).not.toContain('TEST-TOKEN');
