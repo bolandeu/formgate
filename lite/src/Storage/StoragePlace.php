@@ -28,6 +28,12 @@ final class StoragePlace
         return $isWritable ? new self($above, false) : new self(dirname(__DIR__, 2), true);
     }
 
+    /** True when Lite can write in the folder of the storage. */
+    public function isWritable(): bool
+    {
+        return is_writable($this->directory);
+    }
+
     /** The file formgate-<name> of the place: a plain .jsonl file above the site root, a guarded .php file else. */
     public function jsonlFile(string $name): JsonlFile
     {

@@ -30,6 +30,20 @@ final class SettingsLocator
         throw new RuntimeException('settings: no settings file found; set FORMGATE_SETTINGS or put formgate.php above the site root');
     }
 
+    /** Where the settings file was found: `env`, `above_site_root`, `above_releases` or `lite_folder`. */
+    public static function where(string $file): string
+    {
+        if ((string) getenv(self::ENVIRONMENT_VARIABLE) !== '') {
+            return 'env';
+        }
+        $folders = self::foldersAboveSite();
+        return match ($file) {
+            ($folders[0] ?? '') . '/' . self::FILE_NAME => 'above_site_root',
+            ($folders[1] ?? '') . '/' . self::FILE_NAME => 'above_releases',
+            default => 'lite_folder',
+        };
+    }
+
     /** @return list<string> the places to look at, in order */
     private static function candidates(string $liteDirectory): array
     {

@@ -7,8 +7,7 @@
 declare(strict_types=1);
 
 use Formgate\Alerts\AlerterFactory;
-use Formgate\Delivery\Dispatcher;
-use Formgate\Delivery\ImmediateDelivery;
+use Formgate\Delivery\DeliveryFactory;
 use Formgate\Intake\HttpRequest;
 use Formgate\Kernel;
 use Formgate\Response\ErrorCode;
@@ -51,7 +50,7 @@ $kernel = new Kernel(
     $settings,
     $storage,
     SpamFilterFactory::create($settings, $storage, $timeTokens),
-    new ImmediateDelivery(new Dispatcher($settings), $storage, AlerterFactory::create($settings)),
+    DeliveryFactory::create($settings, $storage, AlerterFactory::create($settings)),
     SelfCheckFactory::create($settings, $storage, $signingKey),
     $timeTokens,
 );

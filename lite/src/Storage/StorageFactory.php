@@ -5,6 +5,8 @@
 // - FORMGATE_TEST_WITHOUT_SQLITE: the factory treats pdo_sqlite as not loaded (read here, in hasSqlite).
 // - FORMGATE_TEST_NOW: the time of the request, which moves the clock of retention, rate and duplicate windows
 //   and of time tokens (read in Clock::now).
+// - FORMGATE_TEST_DELIVERY_FILE: Lite calls no channel and appends each delivered request as a JSON line to this file
+//   (read in TestDeliveryFile, used by DeliveryFactory).
 
 declare(strict_types=1);
 

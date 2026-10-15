@@ -1,6 +1,7 @@
 <?php
 // The self-check: a GET on the Lite entry with the secret key of the settings (`?key=…`) shows the setup (the time
-// token check included) and sends one test message per channel. A GET with no `key` parameter is not a self-check: the kernel answers 405, as to any
+// token check included) and sends one test message per channel. A GET that accepts application/json gets the setup as
+// JSON and sends no test message. A GET with no `key` parameter is not a self-check: the kernel answers 405, as to any
 // non-POST. A wrong or empty key, or settings without a key, get 404 with an empty body, so the page shows nothing
 // to a stranger.
 
@@ -33,10 +34,13 @@ final class KeyedSelfCheck implements SelfCheck
         if ($expected === null || !is_string($given) || !hash_equals($expected, $given)) {
             return new Response(404);
         }
-        return SelfCheckPage::response([
+        $findings = [
             ...EnvironmentFindings::collect($this->settings, $this->storage),
             TokenFinding::of($this->settings, $this->signingKey),
-            ...TestSends::collect($this->settings),
-        ]);
+            TestDeliveryFinding::of(),
+        ];
+        return $http->acceptsJson()
+            ? SelfCheckJson::response($this->settings, $this->storage, $this->signingKey, $findings)
+            : SelfCheckPage::response([...$findings, ...TestSends::collect($this->settings)]);
     }
 }

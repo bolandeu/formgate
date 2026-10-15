@@ -191,12 +191,13 @@ final class Settings
     /**
      * The channels in the order of the settings, each with the defaults of its type under its own options.
      *
-     * @return list<array{type: string, options: array<string, mixed>}>
+     * @return list<array{type: string, name: string|null, options: array<string, mixed>}>
      */
     public function channels(): array
     {
         return array_map(fn (array $channel): array => [
             'type' => $channel['type'],
+            'name' => $channel['name'] ?? null,
             'options' => $channel['options'] + ($this->values['channel_defaults'][$channel['type']] ?? []),
         ], $this->values['channels']);
     }

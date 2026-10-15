@@ -74,7 +74,13 @@ final class HttpRequest
     {
         return $this->method === 'POST'
             && $this->isForm()
-            && !str_contains(strtolower($this->header('accept')), 'application/json');
+            && !$this->acceptsJson();
+    }
+
+    /** The client asks for a JSON answer: Accept names application/json. */
+    public function acceptsJson(): bool
+    {
+        return str_contains(strtolower($this->header('accept')), 'application/json');
     }
 
     /** The page the request came from: Origin, or Referer when Origin is missing. */

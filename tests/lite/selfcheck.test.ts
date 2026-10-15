@@ -74,7 +74,7 @@ function projectSettings() {
 }
 
 // Starts Lite with the settings file at the path that `where` gives for the site, and the storage backend forced.
-async function startWith(settings: object, where: (site: Site) => string, backend: Backend = 'sqlite') {
+async function startWith(settings: object, where: (site: Site) => string, backend: Backend = 'sqlite', env: Record<string, string> = {}) {
   captureDir = mkdtempSync(join(tmpdir(), 'formgate-mail-'));
   const site = createSite();
   sites.push(site);
@@ -82,7 +82,7 @@ async function startWith(settings: object, where: (site: Site) => string, backen
   writeFileSync(where(site), `<?php return json_decode(<<<'JSON'\n${json}\nJSON, true, 512, JSON_THROW_ON_ERROR);\n`);
   const lite = await startLite(null, { sendmail_path: `${php} ${sendmailCapture} ${captureDir}` }, {
     site,
-    env: { FORMGATE_SETTINGS: '', ...forceBackend(backend, site) },
+    env: { FORMGATE_SETTINGS: '', ...forceBackend(backend, site), ...env },
   });
   running.push(lite);
   return lite;
@@ -263,5 +263,80 @@ describe('without the right key', () => {
 
     expect(response.status).toBe(404);
     expect(html).toBe('');
+  });
+});
+
+describe('as JSON (Accept: application/json)', () => {
+  const asJson = (lite: Lite, query = `?key=${key}`) =>
+    fetch(lite.url + query, { headers: { Accept: 'application/json' } });
+
+  it('gives the setup without secrets and sends no test message', async () => {
+    const lite = await startWith(projectSettings(), aboveTheSite);
+
+    const response = await asJson(lite);
+    const text = await response.text();
+    const body = JSON.parse(text);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('application/json');
+    expect(body.settings).toEqual({ found: true, where: 'above_site_root', file: realpathSync(aboveTheSite(lite.site)) });
+    expect(body.domains).toEqual(['site.ru']);
+    expect(body.channels).toEqual([
+      { number: 1, type: 'telegram', name: null, configured: true },
+      { number: 2, type: 'bitrix24', name: null, configured: true },
+      { number: 3, type: 'email', name: null, configured: true },
+    ]);
+    expect(body.storage).toEqual({ backend: 'sqlite', writable: true });
+    expect(body.token).toEqual({ required: false, key_present: false, min_seconds: 5, max_seconds: 7200 });
+    expect(body.test_delivery).toBe(false);
+    expect(body.findings).toContainEqual({ label: 'Storage', level: 'ok', detail: 'sqlite' });
+    expect(text).not.toContain('TEST-TOKEN');
+    expect(text).not.toContain(key);
+    expect(telegram.calls).toHaveLength(0);
+    expect(bitrix.calls).toHaveLength(0);
+    expect(sink.messages).toHaveLength(0);
+  });
+
+  it('marks a channel without a required option as not configured', async () => {
+    const settings = projectSettings();
+    settings.channels[0].options.chat_id = '';
+    const lite = await startWith(settings, aboveTheSite);
+
+    const body = await (await asJson(lite)).json();
+
+    expect(body.channels[0]).toEqual({ number: 1, type: 'telegram', name: null, configured: false });
+  });
+
+  it.each([
+    ['a wrong key', '?key=wrong'],
+    ['an empty key', '?key='],
+  ])('%s: 404 with an empty body', async (_name, query) => {
+    const lite = await startWith(projectSettings(), aboveTheSite);
+
+    const response = await asJson(lite, query);
+
+    expect(response.status).toBe(404);
+    expect(await response.text()).toBe('');
+  });
+
+  it('without a key parameter it is still 405', async () => {
+    const lite = await startWith(projectSettings(), aboveTheSite);
+
+    expect((await asJson(lite, '')).status).toBe(405);
+  });
+});
+
+describe('with test delivery on', () => {
+  it('warns in the HTML page and in the JSON', async () => {
+    const lite = await startWith(projectSettings(), aboveTheSite, 'sqlite', {
+      FORMGATE_TEST_DELIVERY_FILE: join(tmpdir(), 'formgate-never-written.jsonl'),
+    });
+
+    const { rows } = await openSelfCheck(lite);
+    const body = await (await fetch(lite.url + `?key=${key}`, { headers: { Accept: 'application/json' } })).json();
+
+    expect(rows.get('Test delivery')?.level).toBe('warning');
+    expect(body.test_delivery).toBe(true);
+    expect(body.findings).toContainEqual(expect.objectContaining({ label: 'Test delivery', level: 'warning' }));
   });
 });
