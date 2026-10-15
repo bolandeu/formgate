@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.17.1 — 2026-10-15
+
+### Cleanup: current docs only, no server paths in the JSON self-check
+
+Every doc of the repo says what the code does now, once, in the right place; a done plan or backlog item is gone; the public docs say nothing about private repos; the JSON self-check gives where the settings are, not the server path.
+
+- Docs sweep: every doc says what the code does now, once, with nothing done-as-future
+
 ## v0.17.0 — 2026-10-15
 
 ### Cleanup: current docs only, no server paths in the JSON self-check
@@ -82,7 +90,7 @@ A site's automatic tests run Lite under php -S and read the delivered requests f
 
 ### Public GitHub mirror and npm package formgate
 
-github.com/bolandeu/formgate is public under MIT with an English README and a Russian README. Each release tag vX.Y.Z of the private repo adds by itself one clean commit and the same tag to the public repo and publishes the npm package formgate. The public tree and its history contain no secret, no private host or address, no personal email and no name of the owner's other products.
+github.com/bolandeu/formgate is public under MIT with an English README and a Russian README. Each release tag vX.Y.Z of the source repo adds by itself one clean commit and the same tag to the public repo and publishes the npm package formgate. The public tree and its history contain no secret, no private host or address, no personal email and no name of the owner's other products.
 
 - Release publish job: public GitHub commit and npm on a version tag
 
@@ -90,7 +98,7 @@ github.com/bolandeu/formgate is public under MIT with an English README and a Ru
 
 ### Public GitHub mirror and npm package formgate
 
-github.com/bolandeu/formgate is public under MIT with an English README and a Russian README. Each release tag vX.Y.Z of the private repo adds by itself one clean commit and the same tag to the public repo and publishes the npm package formgate. The public tree and its history contain no secret, no private host or address, no personal email and no name of the owner's other products.
+github.com/bolandeu/formgate is public under MIT with an English README and a Russian README. Each release tag vX.Y.Z of the source repo adds by itself one clean commit and the same tag to the public repo and publishes the npm package formgate. The public tree and its history contain no secret, no private host or address, no personal email and no name of the owner's other products.
 
 - Public face: MIT licence, READMEs, package name formgate, clean texts
 
@@ -98,7 +106,7 @@ github.com/bolandeu/formgate is public under MIT with an English README and a Ru
 
 ### Public GitHub mirror and npm package formgate
 
-github.com/bolandeu/formgate is public under MIT with an English README and a Russian README. Each release tag vX.Y.Z of the private repo adds by itself one clean commit and the same tag to the public repo and publishes the npm package formgate. The public tree and its history contain no secret, no private host or address, no personal email and no name of the owner's other products.
+github.com/bolandeu/formgate is public under MIT with an English README and a Russian README. Each release tag vX.Y.Z of the source repo adds by itself one clean commit and the same tag to the public repo and publishes the npm package formgate. The public tree and its history contain no secret, no private host or address, no personal email and no name of the owner's other products.
 
 - Public export tool: allow list, deny-list scan, release commit
 
@@ -106,7 +114,7 @@ github.com/bolandeu/formgate is public under MIT with an English README and a Ru
 
 ### Public GitHub mirror and npm package formgate
 
-github.com/bolandeu/formgate is public under MIT with an English README and a Russian README. Each release tag vX.Y.Z of the private repo adds by itself one clean commit and the same tag to the public repo and publishes the npm package formgate. The public tree and its history contain no secret, no private host or address, no personal email and no name of the owner's other products.
+github.com/bolandeu/formgate is public under MIT with an English README and a Russian README. Each release tag vX.Y.Z of the source repo adds by itself one clean commit and the same tag to the public repo and publishes the npm package formgate. The public tree and its history contain no secret, no private host or address, no personal email and no name of the owner's other products.
 
 - Lite: drop the old settings adapter
 

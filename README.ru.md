@@ -36,7 +36,7 @@ curl -fsSL https://raw.githubusercontent.com/bolandeu/formgate/main/install.sh |
 
 | Импорт | Что это |
 | --- | --- |
-| `formgate/client` | `bindForm(form, {fetch?})` и `bindForms(root?)` для сайтов со сборщиком; правила полей `rules` (`phoneDigitsMin`, `phoneDigitsMax`, `maxValueLength`, `maxFields`, `maxBodyBytes`) и проверки `checkPhone(value)` и `checkEmail(value)`, которые дают тот же результат, что и сервер |
+| `formgate/client` | `bindForm(form, {fetch?})` и `bindForms(root?)` для сайтов со сборщиком; правила полей `rules` (`phoneDigitsMin`, `phoneDigitsMax`, `maxValueLength`, `maxFields`, `maxMetaFields`, `maxMetaValueLength`, `maxBodyBytes`) и проверки `checkPhone(value)` и `checkEmail(value)`, которые дают тот же результат, что и сервер |
 | `formgate/astro` | интеграция Astro `formgate({endpoint?})` |
 | `formgate/lite/*` | файлы папки Lite, с `lite/vendor` и лицензией PHPMailer |
 
@@ -47,7 +47,7 @@ curl -fsSL https://raw.githubusercontent.com/bolandeu/formgate/main/install.sh |
 Все три ведут себя одинаково: форма уходит JSON-ом на свой `action`, кнопка отправки заблокирована на время отправки, ответ следует контракту `docs/integration.md`, раздел 8. Форма привязывается один раз, сколько бы раз её ни привязывали.
 
 1. **npm-клиент.** `bindForm(form)` привязывает одну форму; `bindForms()` — каждую `form[data-formgate]`. На время отправки блокируется каждая кнопка отправки формы, и `<button>` без `type` тоже.
-2. **`formgate.js`.** Отдельный файл из того же кода, сборщик не нужен. Он привязывает каждую `form[data-formgate]` по `DOMContentLoaded`. Сборка пишет его в `lite/formgate.js`, рядом с `submit.php`. Интеграция Astro его не копирует: у сайта на Astro клиент в его собственном бандле.
+2. **`formgate.js`.** Отдельный файл из того же кода, сборщик не нужен. Он привязывает каждую `form[data-formgate]` по `DOMContentLoaded`. Сборка пишет его в `lite/formgate.js`, рядом с `submit.php`, поэтому папка Lite его отдаёт. Pro его не отдаёт: скопируйте файл из пакета на сайт. Интеграция Astro его не копирует: у сайта на Astro клиент в его собственном бандле.
 3. **Интеграция Astro.** Добавьте её в `astro.config.mjs`:
 
    ```js
@@ -69,14 +69,7 @@ curl -fsSL https://raw.githubusercontent.com/bolandeu/formgate/main/install.sh |
 
 ## События и состояния
 
-Форма шлёт событие `formgate:success` (`detail` — тело ответа) и `formgate:error` (`detail` — `{code, error, errors}`; после сбоя сети `code` равен `network_error`). `[data-form-status]` получает `data-state="success"` или `"error"`. При успехе его текст — благодарность. При ошибке его текст — тексты полей через пробел, или `error`, или запасной текст после сбоя сети. Поля из `errors` получают `aria-invalid="true"`.
-
-Форма задаёт свои тексты атрибутами; без атрибута остаётся текущий текст:
-
-- `data-formgate-success-text` — текст после успеха.
-- `data-formgate-error-text` — общий текст ошибки: ответ без ошибок полей и без `error`, а также сбой сети. Тексты полей от сервера показываются как раньше.
-- `data-formgate-queued-text` — текст, когда запрос ждёт в офлайн-очереди.
-- `data-formgate-outbox="off"` — выключает очередь для этой формы. При сбое сети в `localStorage` ничего не пишется, `code` равен `network_error`. Очередь других форм работает. По умолчанию очередь включена.
+Форма шлёт события `formgate:success` и `formgate:error`, а тексты формы и офлайн-очередь задаются атрибутами `data-formgate-*`. События, состояния `[data-form-status]` и атрибуты описаны один раз, в `docs/integration.md`, раздел 6.
 
 ## Разработка
 
