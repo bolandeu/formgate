@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.20.6 — 2026-10-15
+
+### Free self-hosted captcha: ALTCHA proof-of-work in the time token, invisible by default, widget on request
+
+With require_pow on, each request costs the sender a small proof-of-work solved by the formgate client in the background (about half a second on a phone); a request without a valid solution goes to the spam log, not lost; a site can show the ALTCHA widget instead with one form attribute; no external service, no new account.
+
+- CHANGELOG: the v0.20.5 entry text fits the public tree
+
+## v0.20.5 — 2026-10-15
+
+### Free self-hosted captcha: ALTCHA proof-of-work in the time token, invisible by default, widget on request
+
+With require_pow on, each request costs the sender a small proof-of-work solved by the formgate client in the background (about half a second on a phone); a request without a valid solution goes to the spam log, not lost; a site can show the ALTCHA widget instead with one form attribute; no external service, no new account.
+
+- Changelog: the integrator guide line names no private product
+
+## v0.20.4 — 2026-10-15
+
+### Free self-hosted captcha: ALTCHA proof-of-work in the time token, invisible by default, widget on request
+
+With require_pow on, each request costs the sender a small proof-of-work solved by the formgate client in the background (about half a second on a phone); a request without a valid solution goes to the spam log, not lost; a site can show the ALTCHA widget instead with one form attribute; no external service, no new account.
+
+- Integrator guide for the captcha: how a site builder turns on and shows the ALTCHA proof-of-work
+
 ## v0.20.3 — 2026-10-15
 
 ### Outside epics

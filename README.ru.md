@@ -24,6 +24,7 @@ curl -fsSL https://raw.githubusercontent.com/bolandeu/formgate/main/install.sh |
 ## Документация
 
 - [Контракт формы и подключение](docs/integration.md)
+- [Капча: proof-of-work ALTCHA](docs/captcha.md)
 - [Установка Lite](docs/lite-setup.md)
 - [Установка Pro](docs/pro-setup.md)
 - [HTTPS для Pro](docs/pro-tls.md)

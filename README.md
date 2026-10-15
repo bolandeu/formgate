@@ -26,6 +26,7 @@ curl -fsSL https://raw.githubusercontent.com/bolandeu/formgate/main/install.sh |
 The docs are in Russian.
 
 - [Form contract and integration](docs/integration.md)
+- [Captcha: ALTCHA proof-of-work](docs/captcha.md)
 - [Lite setup](docs/lite-setup.md)
 - [Pro setup](docs/pro-setup.md)
 - [HTTPS for Pro](docs/pro-tls.md)
