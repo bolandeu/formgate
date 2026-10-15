@@ -169,6 +169,27 @@ describe('install.sh install', () => {
     expect(readEnvFile(envPath).FORMGATE_TOKEN_SECRET).toBe(secret);
   });
 
+  it('fills FORMGATE_ADMIN_KEYS with one random key and keeps it on --update', async () => {
+    await sandbox.run([...answers, '--version', 'v0.4.0'], released);
+    const envPath = join(sandbox.dir, '.env');
+    const adminKeys = readEnvFile(envPath).FORMGATE_ADMIN_KEYS;
+
+    const update = await sandbox.run(['--update'], released);
+
+    expect(adminKeys).toMatch(/^[0-9a-f]{64}$/);
+    expect(update.status).toBe(0);
+    expect(sandbox.checkouts()).toEqual(['v0.4.0', 'v0.5.0']);
+    expect(readEnvFile(envPath).FORMGATE_ADMIN_KEYS).toBe(adminKeys);
+  });
+
+  it('puts the admin port on 127.0.0.1 next to the web port', async () => {
+    await sandbox.run(['--port', '9000', '--yes'], released);
+
+    const env = readEnvFile(join(sandbox.dir, '.env'));
+    expect(env.FORMGATE_WEB_PORT).toBe('127.0.0.1:9000');
+    expect(env.FORMGATE_ADMIN_PORT).toBe('127.0.0.1:9001');
+  });
+
   it('gives each install its own FORMGATE_TOKEN_SECRET', async () => {
     await sandbox.run(answers, released);
     const first = readEnvFile(join(sandbox.dir, '.env')).FORMGATE_TOKEN_SECRET;

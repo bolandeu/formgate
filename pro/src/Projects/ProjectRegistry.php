@@ -3,7 +3,8 @@
 // in the Lite settings format. Every write goes through one lock; the new settings are written to a temporary file,
 // checked by the Lite validator, and only then renamed over the project file, so a reader never sees half a file,
 // two writers never mix, and a refused change leaves the old file as it was. A key of another shape than a project
-// key has no project.
+// key has no project. A project that the admin API makes holds the external id of the tool (`project.external_id`),
+// unique in the registry; a CLI project has none.
 
 declare(strict_types=1);
 
@@ -70,12 +71,38 @@ final class ProjectRegistry
      */
     public function create(array $values, ?callable $verify = null): string
     {
-        return $this->locked(function () use ($values, $verify): string {
-            do {
-                $key = self::newKey();
-            } while ($this->exists($key));
-            $this->write($key, $values, $verify);
-            return $key;
+        return $this->locked(fn (): string => $this->createUnlocked($values, $verify));
+    }
+
+    /** The key of the project with the given external id, or null when no project has it. */
+    public function keyOfExternalId(string $externalId): ?string
+    {
+        foreach ($this->keys() as $key) {
+            if (($this->values($key)['project']['external_id'] ?? null) === $externalId) {
+                return $key;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Makes a project with the external id from the given settings, unless a project has this external id already:
+     * then it changes nothing. The look-up and the write hold one lock, so two calls with one id make one project.
+     * Returns the key and true when the project is new.
+     *
+     * @param array<string, mixed> $values
+     * @param (callable(Settings): void)|null $verify an extra check of the validated settings; it throws to refuse
+     * @return array{string, bool}
+     */
+    public function createForExternalId(string $externalId, array $values, ?callable $verify = null): array
+    {
+        return $this->locked(function () use ($externalId, $values, $verify): array {
+            $key = $this->keyOfExternalId($externalId);
+            if ($key !== null) {
+                return [$key, false];
+            }
+            $values['project']['external_id'] = $externalId;
+            return [$this->createUnlocked($values, $verify), true];
         });
     }
 
@@ -102,6 +129,19 @@ final class ProjectRegistry
             $this->values($key);
             $this->files->remove($this->fileOf($key));
         });
+    }
+
+    /**
+     * @param array<string, mixed> $values
+     * @param (callable(Settings): void)|null $verify
+     */
+    private function createUnlocked(array $values, ?callable $verify): string
+    {
+        do {
+            $key = self::newKey();
+        } while ($this->exists($key));
+        $this->write($key, $values, $verify);
+        return $key;
     }
 
     private function exists(string $key): bool

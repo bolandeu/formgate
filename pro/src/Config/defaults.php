@@ -28,6 +28,9 @@ return [
     // The secret that signs the time tokens of all projects. Without it a project with require_token on answers
     // server_error to a token request, and its self-check fails.
     'FORMGATE_TOKEN_SECRET' => '',
+    // The keys of the admin API, comma separated: a request with `Authorization: Bearer <key>` of any of them is
+    // served, so two keys can be valid during a rotation. Empty turns the admin API off.
+    'FORMGATE_ADMIN_KEYS' => '',
     // The operator alert bot for all of Pro (one Telegram bot). Without a token the alerts are only logged.
     'FORMGATE_ALERT_BOT_TOKEN' => '',
     'FORMGATE_ALERT_CHAT_ID' => '',

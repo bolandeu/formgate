@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.12.0 — 2026-10-15
+
+### Pro admin API: manage projects from outside by an admin key
+
+A tool with an admin key creates, shows, changes and deletes Pro projects over a JSON API that listens on its own port, not on the public form port. Create is idempotent by the tool's external id. Two admin keys can be valid at once for rotation. Secrets never come back in answers. The same rules as the CLI apply.
+
+- Pro admin API frame: own port, admin keys, idempotent create and show
+
 ## v0.11.0 — 2026-10-15
 
 ### Site integration kit: test delivery, machine self-check, form texts, shared field rules, outbox switch

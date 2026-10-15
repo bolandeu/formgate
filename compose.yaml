@@ -2,6 +2,8 @@
 # compose.dev.yaml (listed in COMPOSE_FILE of a dev .env) mounts the source.
 # The profile tls (docs/pro-tls.md) adds Caddy with a Let's Encrypt certificate for FORMGATE_DOMAIN.
 # FORMGATE_WEB_PORT holds the host address and port, 127.0.0.1:8095 by default.
+# FORMGATE_ADMIN_PORT holds the host address and port of the admin API (port 8081 of web, /admin only), 127.0.0.1:8096 by
+# default: an install made before the admin API has no such line in .env.
 # FORMGATE_IMAGE_TAG tags the built image, latest by default; CI builds its own tag so that it does not replace this one.
 # The data and projects folders are set here only: the Dockerfile gets them as build args, Pro as environment.
 x-pro: &pro
@@ -27,6 +29,7 @@ services:
     <<: *pro
     ports:
       - "${FORMGATE_WEB_PORT:?set FORMGATE_WEB_PORT in .env}:8080"
+      - "${FORMGATE_ADMIN_PORT:-127.0.0.1:8096}:8081"
     healthcheck:
       test: ["CMD-SHELL", "curl --silent --show-error --fail http://localhost:$${NGINX_HTTP_PORT}/health"]
     restart: unless-stopped

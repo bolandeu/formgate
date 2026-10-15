@@ -1,5 +1,5 @@
 // Test harness for Pro: a temp data folder and projects folder, project settings files (Lite format) by project
-// key, the Pro entry under php -S, the CLI and `worker --once` as PHP processes, and a read of the SQLite queue.
+// key, the Pro form entry and the admin entry under php -S, the CLI and `worker --once` as PHP processes, and a read of the SQLite queue.
 // The clock is injected with FORMGATE_TEST_NOW. Fake channels and the posts come from the Lite harness.
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -58,12 +58,21 @@ export function createProFolders(): ProFolders {
   };
 }
 
-// Starts the Pro entry on the folders; `env` adds variables, for example FORMGATE_TEST_NOW.
-export async function startPro(folders: ProFolders, env: Record<string, string> = {}): Promise<Pro> {
+// Starts the Pro form entry on the folders; `env` adds variables, for example FORMGATE_TEST_NOW.
+export function startPro(folders: ProFolders, env: Record<string, string> = {}): Promise<Pro> {
+  return startEntry('index.php', folders, env);
+}
+
+// Starts the Pro admin entry (the admin port) on the folders; `env` gives FORMGATE_ADMIN_KEYS.
+export function startProAdmin(folders: ProFolders, env: Record<string, string> = {}): Promise<Pro> {
+  return startEntry('admin.php', folders, env);
+}
+
+async function startEntry(script: string, folders: ProFolders, env: Record<string, string>): Promise<Pro> {
   const errorLog = join(folders.data, `error-${Date.now()}-${Math.random()}.log`);
   const server = await startPhpServer({
     ini: { log_errors: '1', display_errors: '0', error_log: errorLog },
-    serve: ['-t', join(proDir, 'public'), join(proDir, 'public/index.php')],
+    serve: ['-t', join(proDir, 'public'), join(proDir, 'public', script)],
     env: { ...folders.env, ...env },
     readyPath: '/health',
   });

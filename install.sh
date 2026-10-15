@@ -137,17 +137,19 @@ random_secret() {
   od -An -N32 -tx1 /dev/urandom | tr -d ' \n'
 }
 
-# .env from .env.example with the answers, mode 600; each empty *_SECRET key gets a random value.
+# .env from .env.example with the answers, mode 600; the admin port is the port after the web port. Each empty
+# *_SECRET key and an empty FORMGATE_ADMIN_KEYS (one admin key) get a random value.
 write_env() {
   draft=$dir/.env.draft
   cp "$dir/.env.example" "$draft"
   chmod 600 "$draft"
   set_env "$draft" FORMGATE_WEB_PORT "127.0.0.1:$port"
+  set_env "$draft" FORMGATE_ADMIN_PORT "127.0.0.1:$((port + 1))"
   set_env "$draft" FORMGATE_ALERT_BOT_TOKEN "$alert_bot_token"
   set_env "$draft" FORMGATE_ALERT_CHAT_ID "$alert_chat_id"
   [ -z "$domain" ] || set_env "$draft" FORMGATE_DOMAIN "$domain"
   [ -z "$tls" ] || set_env "$draft" COMPOSE_PROFILES tls
-  for key in $(sed -n 's/^\([A-Z0-9_]*_SECRET\)=$/\1/p' "$draft"); do
+  for key in $(sed -n -e 's/^\([A-Z0-9_]*_SECRET\)=$/\1/p' -e 's/^\(FORMGATE_ADMIN_KEYS\)=$/\1/p' "$draft"); do
     set_env "$draft" "$key" "$(random_secret)"
   done
   mv "$draft" "$dir/.env"

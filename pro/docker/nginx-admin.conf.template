@@ -1,0 +1,19 @@
+# The admin port of Pro: a server block of its own next to the form one (nginx-http.conf.template), on the port that
+# compose.yaml maps FORMGATE_ADMIN_PORT to. Only /admin and /admin/... reach the admin entry script; every other path
+# is 404. The Dockerfile fills ${ADMIN_HTTP_PORT} and ${NGINX_WEBROOT} and puts the file in /etc/nginx/conf.d.
+server {
+    listen ${ADMIN_HTTP_PORT};
+    listen [::]:${ADMIN_HTTP_PORT};
+    server_name _;
+    root ${NGINX_WEBROOT};
+
+    location ~ ^/admin(/|$) {
+        include fastcgi_params;
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_param SCRIPT_FILENAME $document_root/admin.php;
+    }
+
+    location / {
+        return 404;
+    }
+}

@@ -1,4 +1,5 @@
-// Static checks of the Pro Docker files: the compose file, the Dockerfile, .env.example and the setup document.
+// Static checks of the Pro Docker files: the compose file, the Dockerfile, the nginx templates, .env.example and the
+// setup document.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -86,16 +87,28 @@ describe('compose.yaml and the Dockerfile', () => {
   });
 
   it('takes the host port from .env and stops when one is missing', () => {
-    expect(compose.services.web.ports).toEqual(['${FORMGATE_WEB_PORT:?set FORMGATE_WEB_PORT in .env}:8080']);
+    expect(compose.services.web.ports?.[0]).toBe('${FORMGATE_WEB_PORT:?set FORMGATE_WEB_PORT in .env}:8080');
   });
 
   it('publishes web on 127.0.0.1 with the default values of .env.example', () => {
     const example = envFile(envExampleText);
     const published = (service: Service) =>
       (service.ports ?? []).map((port) =>
-        port.replace(/\$\{(\w+):\?[^}]*\}/g, (_, name: string) => example[name]),
+        port.replace(/\$\{(\w+):[?-][^}]*\}/g, (_, name: string) => example[name]),
       );
-    expect(published(compose.services.web)).toEqual(['127.0.0.1:8095:8080']);
+    expect(published(compose.services.web)).toEqual(['127.0.0.1:8095:8080', '127.0.0.1:8096:8081']);
+  });
+
+  it('maps FORMGATE_ADMIN_PORT to the admin port of the image, with the default of .env.example', () => {
+    const adminPort = /^ARG ADMIN_HTTP_PORT=(\d+)$/m.exec(dockerfile)?.[1];
+    expect(adminPort).toBe('8081');
+    expect(compose.services.web.ports).toContain(`\${FORMGATE_ADMIN_PORT:-127.0.0.1:8096}:${adminPort}`);
+    expect(envFile(envExampleText).FORMGATE_ADMIN_PORT).toBe('127.0.0.1:8096');
+  });
+
+  it('documents the admin keys in .env.example, empty', () => {
+    expect(envFile(envExampleText).FORMGATE_ADMIN_KEYS).toBe('');
+    expect(configVariables).toContain('FORMGATE_ADMIN_KEYS');
   });
 
   it('checks the health of web by GET /health; the worker has no health check', () => {
@@ -159,12 +172,43 @@ describe('the tls profile', () => {
   });
 });
 
+// The paths that the PHP locations of an nginx file send to a script: location regex => SCRIPT_FILENAME.
+function phpLocations(text: string): { pattern: RegExp; script: string }[] {
+  const blocks = [...text.matchAll(/location ~ (\S+) \{([^}]*)\}/g)];
+  return blocks.map(([, pattern, body]) => ({
+    pattern: new RegExp(pattern),
+    script: /fastcgi_param SCRIPT_FILENAME \$document_root\/(\S+);/.exec(body)?.[1] ?? '',
+  }));
+}
+const scriptOf = (text: string, path: string) => phpLocations(text).find(({ pattern }) => pattern.test(path))?.script;
+
 describe('the nginx template', () => {
   const template = read('pro/docker/nginx-http.conf.template');
 
   it('is the body of the server block of the image, not a server block of its own', () => {
     expect(template).not.toMatch(/^\s*server\s*\{/m);
     expect(template).toMatch(/^listen \$\{NGINX_HTTP_PORT\} default_server;$/m);
+  });
+
+  it('sends /f/<key> and /health to the form entry and no /admin path', () => {
+    expect(scriptOf(template, '/f/abc')).toBe('index.php');
+    expect(scriptOf(template, '/health')).toBe('index.php');
+    for (const path of ['/admin', '/admin/projects', '/admin.php']) expect(scriptOf(template, path)).toBeUndefined();
+  });
+});
+
+describe('the admin nginx template', () => {
+  const template = read('pro/docker/nginx-admin.conf.template');
+
+  it('is a server block of its own on the admin port, put in conf.d by the Dockerfile', () => {
+    expect(template).toMatch(/^server \{$/m);
+    expect(template).toMatch(/^\s*listen \$\{ADMIN_HTTP_PORT\};$/m);
+    expect(dockerfile).toContain('/var/www/html/docker/nginx-admin.conf.template > /etc/nginx/conf.d/admin.conf');
+  });
+
+  it('sends /admin and /admin/... to the admin entry and nothing else', () => {
+    for (const path of ['/admin', '/admin/projects', '/admin/projects/abc']) expect(scriptOf(template, path)).toBe('admin.php');
+    for (const path of ['/f/abc', '/health', '/administrator', '/admin.php']) expect(scriptOf(template, path)).toBeUndefined();
   });
 });
 
@@ -246,6 +290,7 @@ describe('docs/pro-setup.md', () => {
       '5. Проверка (вручную)',
       '6. Логи и остановка',
       '7. Метка времени и спам-лог',
+      '8. Admin API',
     ]);
     expect(doc).toContain('Проверку запускают на любом хосте с Docker и Compose v2');
   });

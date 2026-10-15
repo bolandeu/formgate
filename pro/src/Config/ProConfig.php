@@ -78,6 +78,12 @@ final class ProConfig
         return $this->values['FORMGATE_TOKEN_SECRET'];
     }
 
+    /** @return list<string> the keys of the admin API; none when the API is off */
+    public function adminKeys(): array
+    {
+        return array_values(array_filter(array_map(trim(...), explode(',', $this->values['FORMGATE_ADMIN_KEYS'])), fn (string $key): bool => $key !== ''));
+    }
+
     /**
      * The options of the operator alert bot, or null when no token is set.
      *
