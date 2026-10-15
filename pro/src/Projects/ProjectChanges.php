@@ -24,6 +24,8 @@ final class ProjectChanges
         'project.require_token' => 'bool',
         'project.token_min_seconds' => 'int',
         'project.token_max_seconds' => 'int',
+        'project.require_pow' => 'bool',
+        'project.pow_max_number' => 'int',
     ];
 
     /**

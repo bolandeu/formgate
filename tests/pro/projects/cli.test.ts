@@ -257,6 +257,36 @@ describe('project:set for the time token', () => {
   });
 });
 
+describe('project:set for the proof-of-work', () => {
+  it('refuses project.require_pow true while require_token is false, naming both, and leaves the file unchanged', async () => {
+    const key = await createProject(folders, 'Acme', 'site.ru');
+    const before = projectFile(folders, key);
+
+    const run = await runProject(folders, 'set', [key, 'project.require_pow', 'true']);
+
+    expect(run.status).not.toBe(0);
+    expect(run.stderr).toContain('project.require_pow');
+    expect(run.stderr).toContain('project.require_token');
+    expect(projectFile(folders, key)).toBe(before);
+  });
+
+  it('sets require_pow and pow_max_number once require_token is on, and refuses a pow_max_number below 1000', async () => {
+    const key = await createProject(folders, 'Acme', 'site.ru');
+    await runProject(folders, 'set', [key, 'project.require_token', 'true']);
+
+    expect((await runProject(folders, 'set', [key, 'project.require_pow', 'true'])).status).toBe(0);
+    expect((await runProject(folders, 'set', [key, 'project.pow_max_number', '3000'])).status).toBe(0);
+    const shown = JSON.parse((await runProject(folders, 'show', [key])).stdout);
+    expect([shown.project.require_pow, shown.project.pow_max_number]).toEqual([true, 3000]);
+
+    const before = projectFile(folders, key);
+    const refused = await runProject(folders, 'set', [key, 'project.pow_max_number', '10']);
+    expect(refused.status).not.toBe(0);
+    expect(refused.stderr).toContain('project.pow_max_number');
+    expect(projectFile(folders, key)).toBe(before);
+  });
+});
+
 describe('project:delete', () => {
   it('keeps the project when the answer is no; with --yes the project is gone and /f/<key> answers 404', async () => {
     const key = await createProject(folders, 'Acme', 'site.ru');
