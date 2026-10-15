@@ -170,3 +170,59 @@ describe('bindForm: binding', () => {
     expect(page.querySelector('[data-form-status]')!.hasAttribute('data-state')).toBe(false);
   });
 });
+
+describe('bindForm: texts of the form', () => {
+  const textsForm = (attributes: string) => {
+    document.body.innerHTML = `<form action="https://site.ru/a" data-formgate ${attributes}><input name="phone"><button type="submit">Send</button><p data-form-status></p></form>`;
+    return document.querySelector('form')!;
+  };
+  const status = (form: HTMLFormElement) => form.querySelector<HTMLElement>('[data-form-status]')!;
+
+  it('shows data-formgate-success-text on success; without the attribute the current text stays', async () => {
+    const custom = textsForm('data-formgate-success-text="Мы перезвоним"');
+    bindForm(custom, { fetch: gatewayWithoutToken(async () => answer(200, { ok: true })) });
+    custom.dispatchEvent(new Event('submit', { cancelable: true }));
+    await settle();
+    const plain = textsForm('');
+    bindForm(plain, { fetch: gatewayWithoutToken(async () => answer(200, { ok: true })) });
+    plain.dispatchEvent(new Event('submit', { cancelable: true }));
+    await settle();
+
+    expect(status(custom).textContent).toBe('Мы перезвоним');
+    expect(status(custom).dataset.state).toBe('success');
+    expect(status(plain).textContent).toBe('Спасибо! Заявка отправлена.');
+  });
+
+  it('shows data-formgate-error-text after a network failure with the outbox off', async () => {
+    const form = textsForm('data-formgate-error-text="Ошибка, позвоните" data-formgate-outbox="off"');
+    bindForm(form, { fetch: gatewayWithoutToken(async () => Promise.reject(new TypeError('offline'))) });
+
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    await settle();
+
+    expect(status(form).textContent).toBe('Ошибка, позвоните');
+    expect(status(form).dataset.state).toBe('error');
+  });
+
+  it('shows data-formgate-error-text when the answer has no field errors and no error text', async () => {
+    const form = textsForm('data-formgate-error-text="Ошибка, позвоните"');
+    bindForm(form, { fetch: gatewayWithoutToken(async () => answer(500, { ok: false, code: 'delivery_failed' })) });
+
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    await settle();
+
+    expect(status(form).textContent).toBe('Ошибка, позвоните');
+  });
+
+  it('keeps the field error text of the server and marks the field when the form has an error text', async () => {
+    const form = textsForm('data-formgate-error-text="Ошибка, позвоните"');
+    const body = { ok: false, code: 'validation_failed', error: 'Проверьте поля формы.', errors: { phone: 'Проверьте телефон: в номере должно быть от 10 до 15 цифр.' } };
+    bindForm(form, { fetch: gatewayWithoutToken(async () => answer(422, body)) });
+
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    await settle();
+
+    expect(status(form).textContent).toBe('Проверьте телефон: в номере должно быть от 10 до 15 цифр.');
+    expect(form.querySelector('[name=phone]')!.getAttribute('aria-invalid')).toBe('true');
+  });
+});

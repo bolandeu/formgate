@@ -1,0 +1,7 @@
+{
+  "max_fields": 100,
+  "max_value_length": 10000,
+  "max_body_bytes": 102400,
+  "phone_digits_min": 10,
+  "phone_digits_max": 15
+}

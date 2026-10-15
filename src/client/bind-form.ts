@@ -4,9 +4,11 @@ import { enqueue, startOutbox } from './outbox.ts';
 import { createTokenSource } from './token.ts';
 import { postJson } from './transport.ts';
 
-const successText = 'Спасибо! Заявка отправлена.';
-const fallbackText = 'Не удалось отправить заявку. Попробуйте позже.';
-const queuedText = 'Нет связи. Заявка сохранена и будет отправлена повторно, когда связь появится.';
+const defaultTexts = {
+  success: 'Спасибо! Заявка отправлена.',
+  error: 'Не удалось отправить заявку. Попробуйте позже.',
+  queued: 'Нет связи. Заявка сохранена и будет отправлена повторно, когда связь появится.',
+};
 // A <button> without a type attribute submits the form too.
 const submitButtons = 'button:not([type]), [type="submit"]';
 
@@ -33,6 +35,11 @@ function formFields(form: HTMLFormElement) {
   return fields;
 }
 
+// A form sets its own texts by data-formgate-success-text, -error-text and -queued-text.
+function formText(form: HTMLFormElement, name: keyof typeof defaultTexts) {
+  return form.getAttribute(`data-formgate-${name}-text`) ?? defaultTexts[name];
+}
+
 function markInvalid(form: HTMLFormElement, names: string[]) {
   for (const field of Array.from(form.elements)) {
     if (names.includes((field as HTMLInputElement).name)) field.setAttribute('aria-invalid', 'true');
@@ -55,32 +62,33 @@ function lockSubmit(form: HTMLFormElement, locked: boolean) {
 function handleAnswer(form: HTMLFormElement, answer: GatewayAnswer) {
   if (answer.ok) {
     form.reset();
-    showState(form, 'success', successText);
+    showState(form, 'success', formText(form, 'success'));
     form.dispatchEvent(new CustomEvent('formgate:success', { bubbles: true, detail: answer }));
     return;
   }
   const errors = answer.errors ?? {};
   markInvalid(form, Object.keys(errors));
-  const text = Object.values(errors).join(' ') || answer.error || fallbackText;
+  const text = Object.values(errors).join(' ') || answer.error || formText(form, 'error');
   showState(form, 'error', text);
   const detail = { code: answer.code, error: answer.error, errors };
   form.dispatchEvent(new CustomEvent('formgate:error', { bubbles: true, detail }));
 }
 
-async function readAnswer(response: Response): Promise<GatewayAnswer> {
+async function readAnswer(form: HTMLFormElement, response: Response): Promise<GatewayAnswer> {
   try {
     return (await response.json()) as GatewayAnswer;
   } catch {
-    return { ok: false, code: 'network_error', error: fallbackText };
+    return { ok: false, code: 'network_error', error: formText(form, 'error') };
   }
 }
 
-// The request did not reach the gateway: keep it for later, or report a plain network error.
+// The request did not reach the gateway: keep it for later (unless the form turns the outbox off), or report a plain
+// network error.
 function handleNoAnswer(form: HTMLFormElement, fields: Record<string, string>) {
-  if (enqueue(form.action, fields)) {
-    handleAnswer(form, { ok: false, code: 'queued_offline', error: queuedText });
+  if (form.getAttribute('data-formgate-outbox') !== 'off' && enqueue(form.action, fields)) {
+    handleAnswer(form, { ok: false, code: 'queued_offline', error: formText(form, 'queued') });
   } else {
-    handleAnswer(form, { ok: false, code: 'network_error', error: fallbackText });
+    handleAnswer(form, { ok: false, code: 'network_error', error: formText(form, 'error') });
   }
 }
 
@@ -90,7 +98,7 @@ async function send(form: HTMLFormElement, source: ReturnType<typeof createToken
   try {
     const fields = formFields(form);
     const response = await postJson(form.action, { ...fields, ...(await source.stamp()) }, request);
-    if (response) handleAnswer(form, await readAnswer(response));
+    if (response) handleAnswer(form, await readAnswer(form, response));
     else handleNoAnswer(form, fields);
   } finally {
     void source.refresh();

@@ -37,13 +37,8 @@ return [
         'required' => [],
     ],
     // Limits of one request (docs/integration.md, section 2) and of the phone check (section 8).
-    'limits' => [
-        'max_fields' => 100,
-        'max_value_length' => 10000,
-        'max_body_bytes' => 102400,
-        'phone_digits_min' => 10,
-        'phone_digits_max' => 15,
-    ],
+    // Read from the file that the client build includes too, so the server and the client share one source.
+    'limits' => json_decode((string) file_get_contents(__DIR__ . '/field-rules.json'), true, 512, JSON_THROW_ON_ERROR),
     // How long a request waits for another one that writes the SQLite storage.
     'storage' => ['sqlite_busy_timeout_seconds' => 10],
     // Ordered list of channels: ['type' => 'telegram', 'options' => [...]], with an optional 'name' => 'hr' that

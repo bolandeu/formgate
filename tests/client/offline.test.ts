@@ -107,4 +107,41 @@ describe('offline outbox', () => {
 
     expect(onError.mock.calls[0][0].code).toBe('network_error');
   });
+
+  it('shows data-formgate-queued-text when the outbox takes the request', async () => {
+    const { bindForm } = await loadClient();
+    const form = pageWithForm();
+    form.setAttribute('data-formgate-queued-text', 'Отправим позже');
+    bindForm(form);
+
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    await vi.advanceTimersByTimeAsync(10);
+
+    const status = form.querySelector<HTMLElement>('[data-form-status]')!;
+    expect(status.textContent).toBe('Отправим позже');
+    expect(status.dataset.state).toBe('error');
+  });
+
+  it('data-formgate-outbox="off" keeps nothing in localStorage and fires network_error; another form still queues', async () => {
+    const { bindForm } = await loadClient();
+    document.body.innerHTML = `
+      <form action="${action}" data-formgate data-formgate-outbox="off"><input name="phone" value="111"><p data-form-status></p></form>
+      <form action="${action}" data-formgate><input name="phone" value="222"><p data-form-status></p></form>`;
+    const [off, on] = document.querySelectorAll('form');
+    const onError = vi.fn();
+    off.addEventListener('formgate:error', (event) => onError((event as CustomEvent).detail));
+    bindForm(off);
+    bindForm(on);
+
+    off.dispatchEvent(new Event('submit', { cancelable: true }));
+    await vi.advanceTimersByTimeAsync(10);
+
+    expect(onError.mock.calls[0][0].code).toBe('network_error');
+    expect(localStorage.getItem(outboxKey)).toBeNull();
+
+    on.dispatchEvent(new Event('submit', { cancelable: true }));
+    await vi.advanceTimersByTimeAsync(10);
+
+    expect(keptRequests()).toMatchObject([{ action, fields: { phone: '222' } }]);
+  });
 });

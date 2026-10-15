@@ -1,5 +1,10 @@
 // Lite checks over HTTP: consent, required fields, phone and email syntax, origin and CORS.
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import fieldRules from '../../lite/src/Settings/field-rules.json' with { type: 'json' };
+import examples from '../fixtures/rules/field-examples.json' with { type: 'json' };
+import { php } from '../support/php-server.ts';
 import {
   type FakeChannel,
   type Lite,
@@ -91,6 +96,15 @@ describe('field checks', () => {
     expectFieldError(await postJson(lite.url, { ...visitorForm, email: 'a@b' }), 'email');
   });
 
+  it.each(examples)('$rule "$value": the field error appears only when valid is false (valid: $valid)', async ({ value, rule, valid }) => {
+    const field = rule === 'phone' ? 'phone' : 'email';
+
+    const answer = await postJson(lite.url, { ...visitorForm, [field]: value });
+
+    if (valid) expect(answer.body).toEqual({ ok: true });
+    else expectFieldError(answer, field);
+  });
+
   it('a plain form that fails the checks gets 303 to the error page with ?formgate_error=validation_failed', async () => {
     const answer = await postForm(lite.url, { ...visitorForm, phone: '', __required: 'phone,email' });
 
@@ -163,5 +177,16 @@ describe('origin and CORS', () => {
 
     expect(answer.body).toEqual({ ok: true });
     expect(answer.headers.get('access-control-allow-origin')).toBe('https://site.ru');
+  });
+});
+
+describe('default limits', () => {
+  it('equal the data file that the client build includes', () => {
+    const defaults = join(import.meta.dirname, '../../lite/src/Settings/defaults.php');
+    const code = `echo json_encode((require $argv[1])['limits']);`;
+
+    const limits: unknown = JSON.parse(execFileSync(php, ['-r', code, defaults], { encoding: 'utf8' }));
+
+    expect(limits).toEqual(fieldRules);
   });
 });

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.11.0 — 2026-10-15
+
+### Site integration kit: test delivery, machine self-check, form texts, shared field rules, outbox switch
+
+A site's automatic tests run Lite under php -S and read the delivered requests from a file. A post-publish check gets the Lite setup as JSON by the self-check key. A form sets its own success, error and offline texts and can turn the offline outbox off. The client package exports the field rules the server checks, from one source. CI runs the tests once per push of a branch and reuses the package caches. Contract changes get a minor version.
+
+- Client: form texts, outbox switch and the shared field rules
+
 ## v0.10.8 — 2026-10-15
 
 ### Site integration kit: test delivery, machine self-check, form texts, shared field rules, outbox switch

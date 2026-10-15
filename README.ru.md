@@ -36,7 +36,7 @@ curl -fsSL https://raw.githubusercontent.com/bolandeu/formgate/main/install.sh |
 
 | Импорт | Что это |
 | --- | --- |
-| `formgate/client` | `bindForm(form, {fetch?})` и `bindForms(root?)` для сайтов со сборщиком |
+| `formgate/client` | `bindForm(form, {fetch?})` и `bindForms(root?)` для сайтов со сборщиком; правила полей `rules` (`phoneDigitsMin`, `phoneDigitsMax`, `maxValueLength`, `maxFields`, `maxBodyBytes`) и проверки `checkPhone(value)` и `checkEmail(value)`, которые дают тот же результат, что и сервер |
 | `formgate/astro` | интеграция Astro `formgate({endpoint?})` |
 | `formgate/lite/*` | файлы папки Lite, с `lite/vendor` и лицензией PHPMailer |
 
@@ -70,6 +70,13 @@ curl -fsSL https://raw.githubusercontent.com/bolandeu/formgate/main/install.sh |
 ## События и состояния
 
 Форма шлёт событие `formgate:success` (`detail` — тело ответа) и `formgate:error` (`detail` — `{code, error, errors}`; после сбоя сети `code` равен `network_error`). `[data-form-status]` получает `data-state="success"` или `"error"`. При успехе его текст — благодарность. При ошибке его текст — тексты полей через пробел, или `error`, или запасной текст после сбоя сети. Поля из `errors` получают `aria-invalid="true"`.
+
+Форма задаёт свои тексты атрибутами; без атрибута остаётся текущий текст:
+
+- `data-formgate-success-text` — текст после успеха.
+- `data-formgate-error-text` — общий текст ошибки: ответ без ошибок полей и без `error`, а также сбой сети. Тексты полей от сервера показываются как раньше.
+- `data-formgate-queued-text` — текст, когда запрос ждёт в офлайн-очереди.
+- `data-formgate-outbox="off"` — выключает очередь для этой формы. При сбое сети в `localStorage` ничего не пишется, `code` равен `network_error`. Очередь других форм работает. По умолчанию очередь включена.
 
 ## Разработка
 

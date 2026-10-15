@@ -178,6 +178,37 @@ form.addEventListener('formgate:error', (e) => {
 });
 ```
 
+### Тексты формы и офлайн-очередь
+
+Атрибуты на `<form data-formgate>`; без атрибута остаётся текущий текст.
+
+| Атрибут | Что делает |
+| --- | --- |
+| `data-formgate-success-text` | Текст в `[data-form-status]` после успеха |
+| `data-formgate-error-text` | Общий текст ошибки: ответ без ошибок полей и без `error`, а также сбой сети. Тексты ошибок полей от сервера показываются как раньше |
+| `data-formgate-queued-text` | Текст, когда запрос ждёт в офлайн-очереди (`queued_offline`) |
+| `data-formgate-outbox="off"` | Выключает офлайн-очередь формы: при сбое сети ничего не пишется в `localStorage`, форма показывает текст ошибки с кодом `network_error`. Очередь других форм работает. По умолчанию очередь включена |
+
+### Правила полей из npm-клиента
+
+`formgate/client` отдаёт правила, которые проверяет сервер (источник один — файл `lite/src/Settings/field-rules.json`):
+
+```js
+import { rules, checkPhone, checkEmail } from 'formgate/client';
+
+rules.phoneDigitsMin; // 10
+rules.phoneDigitsMax; // 15
+rules.maxValueLength; // 10000
+rules.maxFields; // 100
+rules.maxBodyBytes; // 102400
+checkPhone('+7 (999) 123-45-67'); // true: число цифр в диапазоне
+checkEmail('a@b.ru'); // true: адрес по синтаксису сервера, в домене есть точка
+```
+
+`checkEmail` повторяет синтаксис PHP `filter_var(FILTER_VALIDATE_EMAIL, FILTER_FLAG_EMAIL_UNICODE)`: кириллица допустима только до `@`, домен — ASCII или punycode (`anna@xn--e1afmkfd.xn--p1ai`, не `anna@пример.рф`).
+
+Пустая строка для `checkPhone('')` и `checkEmail('')` даёт `false`. Сервер пустой телефон или email не проверяет: пустоту ловит проверка обязательных полей. Для необязательного поля вызывайте проверку только для непустого значения.
+
 ## 7. Капча — после MVP
 
 В MVP капчи нет. Защиту дают honeypot, проверка домена, лимит частоты и метка времени.

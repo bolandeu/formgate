@@ -38,7 +38,7 @@ The docs are in Russian.
 
 | Import | What it is |
 | --- | --- |
-| `formgate/client` | `bindForm(form, {fetch?})` and `bindForms(root?)` for sites with a bundler |
+| `formgate/client` | `bindForm(form, {fetch?})` and `bindForms(root?)` for sites with a bundler; the field rules `rules` (`phoneDigitsMin`, `phoneDigitsMax`, `maxValueLength`, `maxFields`, `maxBodyBytes`) and the checks `checkPhone(value)` and `checkEmail(value)`, which give the same result as the server |
 | `formgate/astro` | the Astro integration `formgate({endpoint?})` |
 | `formgate/lite/*` | the files of the Lite folder, with `lite/vendor` and the PHPMailer licence |
 
@@ -72,6 +72,13 @@ All three give the same behaviour: the form goes as JSON to its `action`, the su
 ## Events and states
 
 The form fires `formgate:success` (`detail` is the response body) and `formgate:error` (`detail` is `{code, error, errors}`; after a network failure `code` is `network_error`). `[data-form-status]` gets `data-state="success"` or `"error"`. On success its text is a thank-you text. On error its text is the field texts joined, or `error`, or a fallback text after a network failure. Fields named in `errors` get `aria-invalid="true"`.
+
+A form sets its own texts with attributes; without one the current text stays:
+
+- `data-formgate-success-text`: the text after success.
+- `data-formgate-error-text`: the general error text, for an answer with no field errors and no `error`, and after a network failure. Field texts from the server are shown as before.
+- `data-formgate-queued-text`: the text when the request waits in the offline outbox.
+- `data-formgate-outbox="off"`: turns the outbox off for this form. A network failure writes nothing to `localStorage` and gives `code: 'network_error'`. Other forms keep the outbox. The default is on.
 
 ## Development
 
