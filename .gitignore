@@ -8,3 +8,4 @@ tests/.tmp/
 lite/formgate.js
 .astro/
 .env
+lite/formgate-pow-widget.js

@@ -1,6 +1,7 @@
 // The Formgate client: binds a site form to the gateway. It posts the form as JSON, locks the submit button
 // while sending and shows the answer by the response contract of docs/integration.md section 8.
 import { enqueue, startOutbox } from './outbox.ts';
+import type { PowSolver } from './pow.ts';
 import { createTokenSource } from './token.ts';
 import { postJson } from './transport.ts';
 
@@ -14,6 +15,9 @@ const submitButtons = 'button:not([type]), [type="submit"]';
 
 export interface BindOptions {
   fetch?: typeof fetch;
+  // Loads the module of the ALTCHA widget; only a form with data-formgate-pow="widget" calls it. The entry points of
+  // the package set it, so the widget code stays out of the main client.
+  loadPowWidget?: () => Promise<{ mountPowWidget(form: HTMLFormElement, button: Element | null): PowSolver }>;
 }
 
 interface GatewayAnswer {
@@ -106,11 +110,22 @@ async function send(form: HTMLFormElement, source: ReturnType<typeof createToken
   }
 }
 
+// The widget solver of a form with data-formgate-pow="widget"; `undefined` for the default invisible solving.
+// A widget that cannot load gives no solution: the request then goes without __pow.
+function widgetSolver(form: HTMLFormElement, options: BindOptions): PowSolver | undefined {
+  if (form.getAttribute('data-formgate-pow') !== 'widget' || !options.loadPowWidget) return undefined;
+  const mounted = options
+    .loadPowWidget()
+    .then((module) => module.mountPowWidget(form, form.querySelector(submitButtons)))
+    .catch(() => undefined);
+  return async (challenge) => (await mounted)?.(challenge);
+}
+
 export function bindForm(form: HTMLFormElement, options: BindOptions = {}) {
   if (bound.has(form)) return;
   bound.add(form);
   const request: typeof fetch = (input, init) => (options.fetch ?? fetch)(input, init);
-  const source = createTokenSource(form.action, request);
+  const source = createTokenSource(form.action, request, widgetSolver(form, options));
   void source.refresh();
   // A page restored from the back-forward cache holds an old token.
   window.addEventListener('pageshow', (event) => {

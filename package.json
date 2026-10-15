@@ -1,6 +1,6 @@
 {
   "name": "formgate",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "license": "MIT",
   "description": "Form gateway: Lite PHP handler, client and Astro integration",
   "type": "module",
@@ -14,6 +14,10 @@
     "./client": {
       "types": "./dist/client/index.d.ts",
       "default": "./dist/client/index.js"
+    },
+    "./client/pow-widget": {
+      "types": "./dist/client/pow-widget.d.ts",
+      "default": "./dist/client/pow-widget.js"
     },
     "./astro": {
       "types": "./dist/astro/index.d.ts",
@@ -42,5 +46,9 @@
     "typescript": "^7.0.2",
     "vitest": "^5.0.4",
     "yaml": "^2.9.1"
+  },
+  "dependencies": {
+    "altcha": "^3.3.0",
+    "altcha-lib": "^2.6.0"
   }
 }

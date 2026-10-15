@@ -10,8 +10,9 @@ const name = 'formgate';
 const liteFolder = 'formgate';
 const virtualModule = 'virtual:formgate';
 const resolvedVirtualModule = `\0${virtualModule}`;
-// The standalone client of sites without a bundler; an Astro site gets the client in its own bundle.
-const standaloneClient = 'formgate.js';
+// The standalone client of sites without a bundler, with its widget module; an Astro site gets the client in its own
+// bundle.
+const standaloneClient = ['formgate.js', 'formgate-pow-widget.js'];
 
 export interface FormgateOptions {
   endpoint?: string;
@@ -85,7 +86,7 @@ export default function formgate(options: FormgateOptions = {}): AstroIntegratio
         if (!active || options.endpoint) return;
         cpSync(liteSource, new URL(`${liteFolder}/`, dir), {
           recursive: true,
-          filter: (source) => basename(source) !== standaloneClient,
+          filter: (source) => !standaloneClient.includes(basename(source)),
         });
       },
     },

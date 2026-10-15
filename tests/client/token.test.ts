@@ -130,3 +130,17 @@ describe('time token', () => {
     expect(postedFields(posts(fetchStub)[0])).toEqual({ phone: '123' });
   });
 });
+
+describe('token answer without a challenge', () => {
+  it('sends __token and no __pow', async () => {
+    const form = pageWithForm();
+    const fetchStub = gateway([() => answer(200, { token: 'T', min_seconds: 0 })]);
+    bindForm(form, { fetch: fetchStub as unknown as typeof fetch });
+    await vi.advanceTimersByTimeAsync(10);
+
+    submit(form);
+    await vi.advanceTimersByTimeAsync(10);
+
+    expect(postedFields(posts(fetchStub)[0])).toEqual({ phone: '123', __token: 'T' });
+  });
+});

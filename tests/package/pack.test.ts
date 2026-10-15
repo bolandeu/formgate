@@ -47,12 +47,24 @@ describe('published package', () => {
     expect(packed.some((path) => path.startsWith('lite/'))).toBe(true);
   });
 
-  it('exports ./client, ./astro and ./lite/*, and the files they point at are in the tarball', () => {
-    expect(Object.keys(manifest.exports).sort()).toEqual(['./astro', './client', './lite/*']);
+  it('exports ./client, ./client/pow-widget, ./astro and ./lite/*, and the files they point at are in the tarball', () => {
+    expect(Object.keys(manifest.exports).sort()).toEqual(['./astro', './client', './client/pow-widget', './lite/*']);
+    expect(packed).toContain(manifest.exports['./client/pow-widget'].default.slice(2));
     expect(packed).toContain(manifest.exports['./client'].default.slice(2));
     expect(packed).toContain(manifest.exports['./astro'].default.slice(2));
     expect(packed).toContain('lite/submit.php');
     expect(packed).toContain('lite/formgate.js');
+  });
+
+  it('holds the ALTCHA widget as a separate file: the main client and formgate.js do not contain it', () => {
+    const widgetMarker = 'altcha-widget';
+    expect(packed).toContain('lite/formgate-pow-widget.js');
+    expect(readFromTarball('lite/formgate-pow-widget.js')).toContain(widgetMarker);
+    expect(readFromTarball('dist/client/pow-widget.js')).toContain(widgetMarker);
+    expect(readFromTarball('lite/formgate.js')).not.toContain(widgetMarker);
+    for (const path of ['index', 'bind-form', 'token', 'pow']) {
+      expect(readFromTarball(`dist/client/${path}.js`)).not.toContain(widgetMarker);
+    }
   });
 
   it('carries lite/vendor/phpmailer with its licence', () => {

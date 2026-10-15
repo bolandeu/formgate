@@ -20,7 +20,10 @@ it('after ClientRouter goes to the second page, its form is bound and one submit
   Object.assign(window, { fetch: fetchStub });
   window.document.body.innerHTML = bodyOf(first);
 
-  window.eval(readFileSync(join(site.dist, scriptSrc), 'utf8'));
+  // The script is an ES module (the widget loads by a dynamic import); eval takes it as a plain script, so the page URL
+  // stands in for import.meta.
+  const script = readFileSync(join(site.dist, scriptSrc), 'utf8');
+  window.eval(script.replaceAll('import.meta.resolve', 'undefined').replaceAll('import.meta.url', '"https://site.ru/"'));
   window.document.body.innerHTML = bodyOf(site.read('second/index.html'));
   window.document.dispatchEvent(new window.Event('astro:page-load'));
   window.document.querySelector('form')!.dispatchEvent(new window.Event('submit', { cancelable: true }));
