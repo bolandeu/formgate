@@ -1,7 +1,7 @@
 <?php
 // The server data of a request: what the server saw, not what the visitor typed. A random request id, the visitor IP
 // (VisitorIp, the rule of the rate limit), the User-Agent header cut to a length limit and the host of Origin, else of
-// Referer. A request stored before the server data existed has them all empty. Channels never get this data.
+// Referer. A request stored before the server data existed has them all empty. Only the webhook channel sends this data on.
 
 declare(strict_types=1);
 
@@ -28,11 +28,17 @@ final class ServerData
     public static function fromHttp(HttpRequest $http, VisitorIp $visitorIp): self
     {
         return new self(
-            rtrim(strtr(base64_encode(random_bytes(self::ID_BYTES)), '+/', '-_'), '='),
+            self::newRequestId(),
             $visitorIp->of($http),
             mb_substr($http->header('user-agent'), 0, self::USER_AGENT_LENGTH),
             strtolower((string) parse_url($http->source(), PHP_URL_HOST)),
         );
+    }
+
+    /** A random id for a request. */
+    public static function newRequestId(): string
+    {
+        return rtrim(strtr(base64_encode(random_bytes(self::ID_BYTES)), '+/', '-_'), '=');
     }
 
     /** The data of a request made without a visitor (the self-check) or stored before the server data existed. */

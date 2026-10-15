@@ -16,6 +16,8 @@ import {
   requestToken,
   startFakeChannel,
   startLite,
+  startWebhookReceiver,
+  type WebhookReceiver,
 } from '../support/lite.ts';
 import { type Backend, forceBackend, readStored } from '../support/storage.ts';
 import { type SmtpSink, parseMessage, startSmtpSink } from '../support/smtp-sink.ts';
@@ -27,6 +29,7 @@ const phpVersion = execFileSync(php, ['-r', 'echo PHP_VERSION;'], { encoding: 'u
 
 let telegram: FakeChannel;
 let bitrix: FakeChannel;
+let webhook: WebhookReceiver;
 let sink: SmtpSink;
 let captureDir: string;
 const running: Lite[] = [];
@@ -35,6 +38,7 @@ const sites: Site[] = [];
 beforeAll(async () => {
   [telegram, bitrix] = await Promise.all([startFakeChannel(), startFakeChannel()]);
   sink = await startSmtpSink();
+  webhook = await startWebhookReceiver();
 });
 
 afterEach(() => {
@@ -45,11 +49,12 @@ afterEach(() => {
     fake.answerWith(200, { ok: true, result: 1 });
   }
   sink.messages.length = 0;
+  webhook.received.length = 0;
   if (captureDir) rmSync(captureDir, { recursive: true, force: true });
 });
 
 afterAll(async () => {
-  await Promise.all([telegram.stop(), bitrix.stop(), sink.stop()]);
+  await Promise.all([telegram.stop(), bitrix.stop(), sink.stop(), webhook.stop()]);
 });
 
 function projectSettings() {
@@ -197,6 +202,23 @@ describe('with the right key', () => {
     expect(letters).toHaveLength(1);
     expect(parseMessage(readFileSync(join(captureDir, letters[0]), 'utf8')).subject).toBe('TEST: Formgate self-check');
     expect(readStored('sqlite', lite.site).requests).toEqual([]);
+  });
+
+  it('sends the webhook channel one body with test true and a fresh webhook-id', async () => {
+    const settings = projectSettings();
+    const lite = await startWith(
+      { ...settings, channels: [{ type: 'webhook', options: { url: `${webhook.url}/hook`, secret: 'plain-secret', allow_http: true } }] },
+      aboveTheSite,
+    );
+
+    const { rows } = await openSelfCheck(lite);
+
+    expect(rows.get('webhook #1')?.level).toBe('ok');
+    expect(webhook.received).toHaveLength(1);
+    const body = JSON.parse(webhook.received[0].rawBody);
+    expect(body.test).toBe(true);
+    expect(body.version).toBe(1);
+    expect(webhook.received[0].headers['webhook-id']).toBeTruthy();
   });
 
   it('shows a failed channel as fail with the reason, and the page keeps the secrets out', async () => {

@@ -1,6 +1,7 @@
 <?php
 // A small HTTP client for channels (ADR 0001): POST through curl, or through PHP streams when the hosting has
-// no curl. A transport error throws; any HTTP status comes back with the body.
+// no curl. A transport error throws; any HTTP status comes back with the body. A redirect is never followed:
+// its status comes back as the answer.
 
 declare(strict_types=1);
 
@@ -20,18 +21,37 @@ final class Http
      */
     public function postJson(string $url, array $payload): array
     {
-        $body = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-        return function_exists('curl_init') ? $this->postWithCurl($url, $body) : $this->postWithStreams($url, $body);
+        return $this->post($url, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
     }
 
-    /** @return array{status: int, body: string} */
-    private function postWithCurl(string $url, string $body): array
+    /**
+     * @param string $body sent as it is, with Content-Type application/json
+     * @param array<string, string> $headers extra headers, header name => value
+     * @return array{status: int, body: string}
+     */
+    public function post(string $url, string $body, array $headers = []): array
+    {
+        $lines = ['Content-Type: application/json'];
+        foreach ($headers as $name => $value) {
+            $lines[] = "{$name}: {$value}";
+        }
+        return function_exists('curl_init')
+            ? $this->postWithCurl($url, $body, $lines)
+            : $this->postWithStreams($url, $body, $lines);
+    }
+
+    /**
+     * @param list<string> $headers
+     * @return array{status: int, body: string}
+     */
+    private function postWithCurl(string $url, string $body, array $headers): array
     {
         $curl = curl_init($url);
         curl_setopt_array($curl, [
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => $body,
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => $this->timeoutSeconds,
         ]);
@@ -42,12 +62,16 @@ final class Http
         return ['status' => (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE), 'body' => $answer];
     }
 
-    /** @return array{status: int, body: string} */
-    private function postWithStreams(string $url, string $body): array
+    /**
+     * @param list<string> $headers
+     * @return array{status: int, body: string}
+     */
+    private function postWithStreams(string $url, string $body, array $headers): array
     {
         $context = stream_context_create(['http' => [
             'method' => 'POST',
-            'header' => 'Content-Type: application/json',
+            'header' => implode("\r\n", $headers),
+            'follow_location' => 0,
             'content' => $body,
             'timeout' => $this->timeoutSeconds,
             'ignore_errors' => true,

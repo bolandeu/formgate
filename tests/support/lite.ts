@@ -3,7 +3,7 @@
 // tokens) the way a site form or the client does. The Pro harness takes the settings files, the fake channel and the
 // posts from here.
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { createServer as createHttpServer } from 'node:http';
+import { type IncomingHttpHeaders, createServer as createHttpServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -152,6 +152,50 @@ export async function startFakeChannel(): Promise<FakeChannel> {
     calls,
     answerWith: (status, body) => (answer = { status, body }),
     stop: () => new Promise((resolve) => server.close(() => resolve())),
+  };
+}
+
+export interface ReceivedWebhook {
+  method: string;
+  path: string;
+  headers: IncomingHttpHeaders;
+  rawBody: string;
+}
+
+export interface WebhookReceiver {
+  url: string;
+  received: ReceivedWebhook[];
+  // How the receiver answers next: a status, an optional Location header and an optional delay before the answer.
+  answerWith(status: number, options?: { location?: string; delayMs?: number }): void;
+  stop(): Promise<void>;
+}
+
+// A local HTTP server in place of a webhook receiver: it records the method, headers and raw body of each request
+// and answers as told (204 until told otherwise).
+export async function startWebhookReceiver(): Promise<WebhookReceiver> {
+  const received: ReceivedWebhook[] = [];
+  let answer: { status: number; location?: string; delayMs?: number } = { status: 204 };
+  const server = createHttpServer((req, res) => {
+    let rawBody = '';
+    req.on('data', (chunk) => (rawBody += chunk));
+    req.on('end', () => {
+      received.push({ method: req.method ?? '', path: req.url ?? '', headers: req.headers, rawBody });
+      setTimeout(() => {
+        res.writeHead(answer.status, answer.location ? { Location: answer.location } : {});
+        res.end();
+      }, answer.delayMs ?? 0);
+    });
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address() as { port: number };
+  return {
+    url: `http://127.0.0.1:${port}`,
+    received,
+    answerWith: (status, options = {}) => (answer = { status, ...options }),
+    stop: () => {
+      server.closeAllConnections();
+      return new Promise((resolve) => server.close(() => resolve()));
+    },
   };
 }
 

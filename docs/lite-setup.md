@@ -59,7 +59,7 @@ Self-check — страница, которую открывает операт�
 
 Если включена тестовая доставка (раздел 5), страница предупреждает об этом.
 
-Тестовое сообщение помечено как тест (`TEST: Formgate self-check`) и в хранилище не попадает. Тест в Bitrix24 создаёт настоящий лид с заголовком `TEST: Formgate self-check`: удалите его в CRM.
+Тестовое сообщение помечено как тест (`TEST: Formgate self-check`) и в хранилище не попадает. Тест в Bitrix24 создаёт настоящий лид с заголовком `TEST: Formgate self-check`: удалите его в CRM. Тест в канал webhook шлёт тело с `"test": true`: приёмник должен его принять.
 
 С неверным или пустым ключом и при незаданном `selfcheck_key` ответ — `404` с пустым телом. `GET` без параметра `key` — не self-check: ответ `405 method_not_allowed`, как на любой запрос не методом `POST`. Не публикуйте ссылку с ключом.
 
@@ -117,10 +117,11 @@ Lite хранит заявки, спам-лог, счётчики лимита �
 | `telegram` | `bot_token`, `chat_id` | `api_url` (по умолчанию `https://api.telegram.org`), `timeout_seconds` (10) |
 | `email` | `to` (адрес или список), `methods` | `timeout_seconds` (10), `default_subject` (тема, когда нет `__subject`) |
 | `bitrix24` | `webhook_url` (входящий вебхук) | `map` (поле заявки → поле лида), `timeout_seconds` (10), `default_title` (`TITLE` лида, когда нет `__subject`) |
+| `webhook` | `url` (только `https`), `secret` | `headers` (имя → значение), `timeout_seconds` (10), `allow_http` (`false`; `true` разрешает `http`) |
 
 `methods` почты — список способов, Lite пробует их по порядку, пока один не примет письмо:
 
 - `['type' => 'smtp', 'host' => …, 'port' => …, 'encryption' => 'ssl'|'tls'|'starttls'|'none', 'from' => …]` и необязательные `login`, `password`;
 - `['type' => 'mail', 'from' => …]` — PHP `mail()` через sendmail хостинга.
 
-Каждое письмо несёт заголовок `X-Tags: formgate`, по нему письма можно фильтровать в почтовом ящике. Что из заявки попадает в сообщение и в лид Bitrix24 — `docs/integration.md`, раздел 3. Бот оповещений (`alert`: `bot_token`, `chat_id`) задаёт те же опции, что канал `telegram`.
+Каждое письмо несёт заголовок `X-Tags: formgate`, по нему письма можно фильтровать в почтовом ящике. Что из заявки попадает в сообщение и в лид Bitrix24 — `docs/integration.md`, раздел 3. Тело, заголовки и подпись канала webhook — там же. Бот оповещений (`alert`: `bot_token`, `chat_id`) задаёт те же опции, что канал `telegram`.

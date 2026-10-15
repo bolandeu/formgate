@@ -55,6 +55,7 @@ return [
         'telegram' => ['api_url' => 'https://api.telegram.org', 'timeout_seconds' => 10],
         'email' => ['timeout_seconds' => 10, 'default_subject' => 'Заявка с сайта'],
         'bitrix24' => ['timeout_seconds' => 10, 'default_title' => 'Заявка с сайта'],
+        'webhook' => ['timeout_seconds' => 10, 'allow_http' => false],
     ],
     // The Telegram bot that tells the operator about failed channels: set both bot_token and chat_id, or neither.
     // It takes api_url and timeout_seconds from channel_defaults.telegram unless it sets them.

@@ -1,6 +1,6 @@
 <?php
 // Makes a channel from its settings. The class is found by convention from the type name:
-// `telegram` => Formgate\Channels\TelegramChannel, `bitrix24` => Bitrix24Channel.
+// `telegram` => Formgate\Channels\TelegramChannel, `bitrix24` => Bitrix24Channel, `webhook` => WebhookChannel.
 
 declare(strict_types=1);
 
