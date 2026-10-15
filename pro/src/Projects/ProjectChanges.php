@@ -1,7 +1,8 @@
 <?php
-// The edits of the project settings that the CLI makes, each a pure function from the values of a settings file to
-// the new values: a new project, the domains, the channels and the plain settings (thank-you and error pages,
-// retention and limits). The registry validates the result before it writes; a wrong request throws with the field.
+// The edits of the project settings that the CLI and the admin API make, each a pure function from the values of a
+// settings file to the new values: a new project, the domains, the channels and the plain settings (thank-you and error
+// pages, retention and limits). The registry validates the result before it writes; a wrong request throws with the
+// field.
 
 declare(strict_types=1);
 
@@ -75,9 +76,9 @@ final class ProjectChanges
      * @param array<string, mixed> $options
      * @return array<string, mixed>
      */
-    public static function addChannel(array $values, string $type, array $options): array
+    public static function addChannel(array $values, string $type, array $options, ?string $name = null): array
     {
-        $values['channels'][] = ['type' => $type, 'options' => $options];
+        $values['channels'][] = ['type' => $type, ...($name === null ? [] : ['name' => $name]), 'options' => $options];
         return $values;
     }
 

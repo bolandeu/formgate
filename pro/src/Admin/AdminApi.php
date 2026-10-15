@@ -1,8 +1,8 @@
 <?php
-// The admin API of Pro, on its own port: a tool with an admin key creates and shows projects over JSON. The keys
+// The admin API of Pro, on its own port: a tool with an admin key creates, shows, changes and deletes projects over JSON. The keys
 // come from FORMGATE_ADMIN_KEYS; a request with `Authorization: Bearer <key>` of any listed key is served, compared in
 // constant time; no or a wrong key gets 401 unauthorized. An empty key list turns the API off: every path is 404.
-// Routes: POST /admin/projects, GET /admin/projects?external_id=<id>, GET /admin/projects/<key>; any other is 404.
+// Routes: create, show and change a project (domains, channels), delete and self-check; any other is 404.
 
 declare(strict_types=1);
 
@@ -11,12 +11,12 @@ namespace Formgate\Pro\Admin;
 use Formgate\Intake\HttpRequest;
 use Formgate\Pro\Config\ProConfig;
 use Formgate\Pro\Projects\ProjectRegistry;
+use Formgate\Pro\Token\EnvironmentSigningKey;
 use Formgate\Response\Response;
 
 final class AdminApi
 {
     private const PROJECTS_PATH = '/admin/projects';
-    private const PROJECT_PATH = '~^/admin/projects/([^/]+)$~';
     private const BEARER = 'Bearer ';
 
     public function __construct(private readonly ProConfig $config)
@@ -32,12 +32,23 @@ final class AdminApi
         if (!self::isAllowed($keys, $http->header('authorization'))) {
             return Response::json(401, ['ok' => false, 'code' => 'unauthorized']);
         }
-        $projects = new AdminProjects(new ProjectRegistry($this->config->projectsDir()));
+        $registry = new ProjectRegistry($this->config->projectsDir());
+        $projects = new AdminProjects($registry);
+        $changes = new AdminChanges($registry, $projects, new EnvironmentSigningKey($this->config));
         $externalId = $http->query['external_id'] ?? null;
+        $confirmed = ($http->query['confirm'] ?? null) === 'true';
+        $route = $http->method . ' ' . $path;
         return match (true) {
-            $http->method === 'POST' && $path === self::PROJECTS_PATH => $projects->create($http->body),
-            $http->method === 'GET' && $path === self::PROJECTS_PATH && is_string($externalId) => $projects->showByExternalId($externalId),
-            $http->method === 'GET' && preg_match(self::PROJECT_PATH, $path, $match) === 1 => $projects->show($match[1]),
+            $route === 'POST ' . self::PROJECTS_PATH => $projects->create($http->body),
+            $route === 'GET ' . self::PROJECTS_PATH && is_string($externalId) => $projects->showByExternalId($externalId),
+            preg_match('~^GET /admin/projects/([^/]+)$~', $route, $m) === 1 => $projects->show($m[1]),
+            preg_match('~^DELETE /admin/projects/([^/]+)$~', $route, $m) === 1 => $changes->delete($m[1], $confirmed),
+            preg_match('~^POST /admin/projects/([^/]+)/domains$~', $route, $m) === 1 => $changes->addDomain($m[1], $http->body),
+            preg_match('~^DELETE /admin/projects/([^/]+)/domains/([^/]+)$~', $route, $m) === 1 => $changes->removeDomain($m[1], $m[2]),
+            preg_match('~^POST /admin/projects/([^/]+)/channels$~', $route, $m) === 1 => $changes->addChannel($m[1], $http->body),
+            preg_match('~^PATCH /admin/projects/([^/]+)/channels/(\d+)$~', $route, $m) === 1 => $changes->changeChannel($m[1], (int) $m[2], $http->body),
+            preg_match('~^DELETE /admin/projects/([^/]+)/channels/(\d+)$~', $route, $m) === 1 => $changes->removeChannel($m[1], (int) $m[2]),
+            preg_match('~^POST /admin/projects/([^/]+)/selfcheck$~', $route, $m) === 1 => $changes->selfCheck($m[1], $http->body),
             default => new Response(404),
         };
     }

@@ -32,7 +32,7 @@ final class AdminProjects
                 ProjectChannels::verifyLast(...),
             );
         } catch (InvalidArgumentException | RuntimeException $refusal) {
-            return Response::json(422, ['ok' => false, 'code' => 'invalid', 'error' => $refusal->getMessage()]);
+            return self::invalid($refusal);
         }
         return $this->project($isNew ? 201 : 200, $key);
     }
@@ -40,9 +40,21 @@ final class AdminProjects
     public function show(string $key): Response
     {
         if ($this->registry->find($key) === null) {
-            return Response::json(404, ['ok' => false, 'code' => 'project_not_found']);
+            return self::notFound();
         }
         return $this->project(200, $key);
+    }
+
+    /** The answer to a key that has no project. */
+    public static function notFound(): Response
+    {
+        return Response::json(404, ['ok' => false, 'code' => 'project_not_found']);
+    }
+
+    /** The answer to a refused input or change, with the reason. */
+    public static function invalid(InvalidArgumentException | RuntimeException $refusal): Response
+    {
+        return Response::json(422, ['ok' => false, 'code' => 'invalid', 'error' => $refusal->getMessage()]);
     }
 
     public function showByExternalId(string $externalId): Response
@@ -51,7 +63,7 @@ final class AdminProjects
     }
 
     /** The answer with the project of the key, its secrets masked. */
-    private function project(int $status, string $key): Response
+    public function project(int $status, string $key): Response
     {
         $values = $this->registry->values($key);
         return Response::json($status, ['ok' => true, 'project' => [
@@ -71,14 +83,9 @@ final class AdminProjects
      */
     private static function input(string $body): array
     {
-        $input = json_decode($body, true);
-        if (!is_array($input)) {
-            throw new InvalidArgumentException('body: must be a JSON object');
-        }
+        $input = AdminBody::object($body);
         foreach (['external_id', 'name', 'domain'] as $name) {
-            if (!is_string($input[$name] ?? null) || $input[$name] === '') {
-                throw new InvalidArgumentException("{$name}: must be a non-empty string");
-            }
+            AdminBody::text($input, $name);
         }
         $channel = $input['channel'] ?? null;
         if (!is_array($channel) || !is_string($channel['type'] ?? null) || $channel['type'] === '' || !is_array($channel['options'] ?? null)) {

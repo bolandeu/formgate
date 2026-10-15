@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.15.0 — 2026-10-15
+
+### Pro admin API: manage projects from outside by an admin key
+
+A tool with an admin key creates, shows, changes and deletes Pro projects over a JSON API that listens on its own port, not on the public form port. Create is idempotent by the tool's external id. Two admin keys can be valid at once for rotation. Secrets never come back in answers. The same rules as the CLI apply.
+
+- Pro admin API: domains, channels, delete and self-check
+
 ## v0.14.0 — 2026-10-15
 
 ### Analytics fields: meta_ fields to storage and CRM, a short source block for managers, server request data
