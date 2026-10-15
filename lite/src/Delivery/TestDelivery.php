@@ -1,6 +1,6 @@
 <?php
 // The test delivery: in place of the channels it appends the request as one JSON line to a file: the time (ISO 8601),
-// the form, the fields, the service values, the consent line and the channels of the route (number, type, name). The
+// the request id, the form, the fields, the service values, the consent line and the channels of the route (number, type, name). The
 // request is stored as delivered. A file that cannot be written gives delivery_failed, as a failed channel does.
 
 declare(strict_types=1);
@@ -45,6 +45,7 @@ final class TestDelivery implements Delivery
     {
         return [
             'time' => $request->receivedAt->format(DATE_ATOM),
+            'request_id' => $request->server->requestId,
             'form' => $request->service->form,
             'fields' => $request->fields,
             'service' => [

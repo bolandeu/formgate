@@ -11,6 +11,7 @@ namespace Formgate\Pro\Spam;
 
 use Formgate\Channels\ChannelFactory;
 use Formgate\Intake\Request;
+use Formgate\Intake\ServerData;
 use Formgate\Pro\Config\ProConfig;
 use Formgate\Pro\Projects\ProjectRegistry;
 use Formgate\Pro\Queue\Database;
@@ -22,7 +23,8 @@ use Formgate\Storage\SqliteStorage;
 
 final class SpamLog
 {
-    private const COLUMNS = "id, COALESCE(project_key, '') AS project_key, received_at, reason, fields, service";
+    private const COLUMNS = "id, COALESCE(project_key, '') AS project_key, received_at, reason, fields, service, "
+        . 'request_id, ip, user_agent, origin_host';
 
     /** @var array<string, ?Router> the router of each project key asked for, null for a project that is gone */
     private array $routers = [];
@@ -95,6 +97,7 @@ final class SpamLog
             SpamReason::from($row['reason']),
             json_decode($row['fields'], true, 512, JSON_THROW_ON_ERROR),
             json_decode($row['service'], true, 512, JSON_THROW_ON_ERROR),
+            array_intersect_key($row, array_flip(ServerData::NAMES)),
         );
     }
 }

@@ -1,6 +1,6 @@
 <?php
 // The Pro queue: one table of requests with the project key, the route (Route::name(); a request queued before
-// routing took the default route), the status (queued until the worker sends it, then
+// routing took the default route), the server data (a request queued before it has them empty), the status (queued until the worker sends it, then
 // the status of its delivery report, and not delivered after the last repeat), the result of each channel, the
 // number of attempts and the time of the next attempt. A request waits for an attempt while it is queued, partial or
 // failed; it is due when its due time has come.
@@ -13,6 +13,7 @@ use DateTimeImmutable;
 use Formgate\Channels\DeliveryReport;
 use Formgate\Channels\DeliveryStatus;
 use Formgate\Intake\Request;
+use Formgate\Intake\ServerData;
 use Formgate\Routing\Route;
 use Formgate\Storage\Records;
 
@@ -20,7 +21,8 @@ final class Queue
 {
     private const QUEUED = 'queued';
     private const NOT_DELIVERED = 'not_delivered';
-    private const COLUMNS = 'id, project_key, fields, service, received_at, attempts, channels, route';
+    private const COLUMNS = 'id, project_key, fields, service, received_at, attempts, channels, route, '
+        . 'request_id, ip, user_agent, origin_host';
 
     public function __construct(private readonly Database $db)
     {
@@ -35,16 +37,20 @@ final class Queue
             if (!in_array('route', $columns, true)) {
                 $db->run('ALTER TABLE queue ADD COLUMN route TEXT NOT NULL DEFAULT \'default\'');
             }
+            foreach (array_diff(ServerData::NAMES, $columns) as $name) {
+                $db->run("ALTER TABLE queue ADD COLUMN {$name} TEXT NOT NULL DEFAULT ''");
+            }
         });
     }
 
-    /** Stores the request with its route and status queued, due at once. */
+    /** Stores the request with its route and server data and status queued, due at once. */
     public function add(string $projectKey, Request $request, Route $route): void
     {
         $receivedAt = Records::time($request->receivedAt);
+        $server = $request->server->values();
         $this->db->run(
-            'INSERT INTO queue (project_key, received_at, form, fields, service, status, channels, due_at, route)'
-            . ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO queue (project_key, received_at, form, fields, service, status, channels, due_at, route, '
+            . implode(', ', array_keys($server)) . ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?' . str_repeat(', ?', count($server)) . ')',
             [
                 $projectKey,
                 $receivedAt,
@@ -55,6 +61,7 @@ final class Queue
                 '{}',
                 $receivedAt,
                 $route->name(),
+                ...array_values($server),
             ],
         );
     }
@@ -119,6 +126,7 @@ final class Queue
             (int) $row['attempts'],
             json_decode($row['channels'], true, 512, JSON_THROW_ON_ERROR),
             $row['route'],
+            array_intersect_key($row, array_flip(ServerData::NAMES)),
         ), $rows);
     }
 }

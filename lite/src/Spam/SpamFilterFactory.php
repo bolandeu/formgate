@@ -14,6 +14,6 @@ final class SpamFilterFactory
 {
     public static function create(Settings $settings, Storage $storage, TimeTokens $timeTokens): SpamFilter
     {
-        return new RuleSpamFilter($settings, $storage, new VisitorIp($settings->trustedProxies()), $timeTokens);
+        return new RuleSpamFilter($settings, $storage, $timeTokens);
     }
 }

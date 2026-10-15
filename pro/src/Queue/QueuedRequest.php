@@ -1,7 +1,7 @@
 <?php
 // A request in the Pro queue as the worker takes it: its id, the project key, what is needed to make the Lite
 // request again (fields, service field values, the time it came), how many delivery attempts it had and the result
-// of each channel so far, and the route it took (Route::name()).
+// of each channel so far, the route it took (Route::name()) and the server data.
 
 declare(strict_types=1);
 
@@ -12,6 +12,7 @@ use DateTimeZone;
 use Formgate\Channels\ChannelResult;
 use Formgate\Channels\DeliveryReport;
 use Formgate\Intake\Request;
+use Formgate\Intake\ServerData;
 use Formgate\Intake\ServiceFields;
 
 final class QueuedRequest
@@ -20,6 +21,7 @@ final class QueuedRequest
      * @param array<string, string> $fields
      * @param array<string, string> $serviceValues the values of ServiceFields::values()
      * @param array<string, array{delivered: bool, reason: string}> $channelResults channel name => its last result
+     * @param array<string, string> $serverValues the values of ServerData::values()
      */
     public function __construct(
         public readonly int $id,
@@ -30,6 +32,7 @@ final class QueuedRequest
         public readonly int $attempts,
         private readonly array $channelResults,
         public readonly string $route,
+        private readonly array $serverValues,
     ) {
     }
 
@@ -40,6 +43,7 @@ final class QueuedRequest
             $this->fields,
             ServiceFields::fromValues($this->serviceValues),
             (new DateTimeImmutable($this->receivedAt))->setTimezone($timezone),
+            ServerData::fromValues($this->serverValues),
         );
     }
 

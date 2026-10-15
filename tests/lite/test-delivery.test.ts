@@ -73,6 +73,19 @@ describe('with FORMGATE_TEST_DELIVERY_FILE set', () => {
     expect(lines[0].service).toEqual({ subject: '', reply_to: 'email', redirect: '' });
   });
 
+  it('writes the request id of the request in its line', async () => {
+    const file = join(outputDir, 'out.jsonl');
+    const lite = await startWithDeliveryFile(file);
+
+    await postFormForJson(lite.url, visitorForm);
+    await postFormForJson(lite.url, { ...visitorForm, name: 'Борис' });
+
+    const [first, second] = linesOf(file);
+    expect(first.request_id).toMatch(/^[A-Za-z0-9_-]{16,}$/);
+    expect(second.request_id).toMatch(/^[A-Za-z0-9_-]{16,}$/);
+    expect(second.request_id).not.toBe(first.request_id);
+  });
+
   it('with meta_ fields keeps the consent line as consent and all meta_ fields in fields', async () => {
     const file = join(outputDir, 'out.jsonl');
     const lite = await startWithDeliveryFile(file);

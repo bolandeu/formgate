@@ -1,6 +1,6 @@
 <?php
 // A request (заявка): the form fields of one submission without service fields, the service fields apart,
-// and the time it came. The fields named meta_* are analytics fields: they stay in `fields` but apart from the
+// the time it came and the server data. The fields named meta_* are analytics fields: they stay in `fields` but apart from the
 // visitor fields. Channels take its text lines: the visitor fields, the consent line and the source block.
 
 declare(strict_types=1);
@@ -26,6 +26,7 @@ final class Request
         public readonly array $fields,
         public readonly ServiceFields $service,
         public readonly DateTimeImmutable $receivedAt,
+        public readonly ServerData $server,
     ) {
     }
 
@@ -38,7 +39,7 @@ final class Request
     /** The same request without the field `$name`. */
     public function without(string $name): self
     {
-        return new self(array_diff_key($this->fields, [$name => true]), $this->service, $this->receivedAt);
+        return new self(array_diff_key($this->fields, [$name => true]), $this->service, $this->receivedAt, $this->server);
     }
 
     public static function isAnalytics(string $name): bool

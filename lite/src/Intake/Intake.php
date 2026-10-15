@@ -10,6 +10,7 @@ use Formgate\Clock;
 use Formgate\Response\ErrorCode;
 use Formgate\Response\Rejection;
 use Formgate\Settings\Settings;
+use Formgate\Spam\VisitorIp;
 
 final class Intake
 {
@@ -19,8 +20,11 @@ final class Intake
         'analytics' => ['max_meta_fields', 'max_meta_value_length'],
     ];
 
+    private readonly VisitorIp $visitorIp;
+
     public function __construct(private readonly Settings $settings)
     {
+        $this->visitorIp = new VisitorIp($settings->trustedProxies());
     }
 
     public function parse(HttpRequest $http): Request
@@ -37,6 +41,7 @@ final class Intake
             $fields,
             ServiceFields::fromValues(array_diff_key($values, $fields)),
             Clock::now($this->settings->timezone()),
+            ServerData::fromHttp($http, $this->visitorIp),
         );
     }
 

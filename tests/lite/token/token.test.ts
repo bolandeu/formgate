@@ -185,6 +185,10 @@ describe('require_token on', () => {
         fields: { name: 'Анна', phone: '+7 900 123-45-67', consent: '1', message: 'Перезвоните', website: '' },
         service: { __form: 'callback', __subject: '', __replyto: 'email', __redirect: '', __required: '' },
         reason: 'token_unavailable',
+        request_id: expect.stringMatching(/^[A-Za-z0-9_-]{16,}$/),
+        ip: '127.0.0.1',
+        user_agent: expect.any(String),
+        origin_host: 'site.ru',
       },
     ]);
   });

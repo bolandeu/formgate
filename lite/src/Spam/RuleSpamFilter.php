@@ -19,7 +19,6 @@ final class RuleSpamFilter implements SpamFilter
     public function __construct(
         private readonly Settings $settings,
         private readonly Storage $storage,
-        private readonly VisitorIp $visitorIp,
         private readonly TimeTokens $timeTokens,
     ) {
     }
@@ -29,7 +28,7 @@ final class RuleSpamFilter implements SpamFilter
         return match (true) {
             $request->field($this->settings->honeypotField()) !== '' => SpamReason::Honeypot,
             trim($http->header('user-agent')) === '' => SpamReason::EmptyUserAgent,
-            default => $this->timeTokens->spamReason($request) ?? $this->repeatedReason($request, $http),
+            default => $this->timeTokens->spamReason($request) ?? $this->repeatedReason($request),
         };
     }
 
@@ -40,18 +39,18 @@ final class RuleSpamFilter implements SpamFilter
     }
 
     /** The reason of a request that comes too often: over the rate limit or a duplicate. */
-    private function repeatedReason(Request $request, HttpRequest $http): ?SpamReason
+    private function repeatedReason(Request $request): ?SpamReason
     {
         return match (true) {
-            $this->isOverRateLimit($request, $http) => SpamReason::RateLimit,
+            $this->isOverRateLimit($request) => SpamReason::RateLimit,
             $this->isDuplicate($request) => SpamReason::Duplicate,
             default => null,
         };
     }
 
-    private function isOverRateLimit(Request $request, HttpRequest $http): bool
+    private function isOverRateLimit(Request $request): bool
     {
-        $key = $this->visitorIp->of($http) . ' ' . $request->service->form;
+        $key = $request->server->ip . ' ' . $request->service->form;
         $hits = $this->storage->countHit($key, $request->receivedAt, $this->settings->rateLimitWindowSeconds());
         return $hits > $this->settings->rateLimitRequests();
     }

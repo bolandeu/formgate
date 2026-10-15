@@ -11,7 +11,17 @@ export type Backend = (typeof backends)[number];
 
 export const guardLine = '<?php exit; ?>';
 
-export interface StoredRequest {
+// The server data of a request; empty strings when it was stored before the server data existed.
+export interface ServerData {
+  request_id: string;
+  ip: string;
+  user_agent: string;
+  origin_host: string;
+}
+
+const emptyServerData: ServerData = { request_id: '', ip: '', user_agent: '', origin_host: '' };
+
+export interface StoredRequest extends ServerData {
   received_at: string;
   form: string;
   fields: Record<string, string>;
@@ -21,9 +31,9 @@ export interface StoredRequest {
 }
 
 // A stored request as Lite kept it before routing: it has no route.
-export type OldStoredRequest = Omit<StoredRequest, 'route'>;
+export type OldStoredRequest = Omit<StoredRequest, 'route' | keyof ServerData>;
 
-export interface SpamEntry {
+export interface SpamEntry extends ServerData {
   received_at: string;
   form: string;
   fields: Record<string, string>;
@@ -59,8 +69,8 @@ export function readStored(backend: Backend, site: Site): Stored {
 function readSqlite(site: Site): Stored {
   const db = new DatabaseSync(join(site.above, 'formgate.sqlite'), { readOnly: true });
   try {
-    const requests = db.prepare('SELECT received_at, form, fields, status, channels, route FROM requests ORDER BY id').all();
-    const spamLog = db.prepare('SELECT received_at, form, fields, service, reason FROM spam_log ORDER BY id').all();
+    const requests = db.prepare('SELECT received_at, form, fields, status, channels, route, request_id, ip, user_agent, origin_host FROM requests ORDER BY id').all();
+    const spamLog = db.prepare('SELECT received_at, form, fields, service, reason, request_id, ip, user_agent, origin_host FROM spam_log ORDER BY id').all();
     const { hits } = db.prepare('SELECT COUNT(*) AS hits FROM rate_hits').get() as { hits: number };
     return {
       requests: requests.map((row) => ({
@@ -78,9 +88,14 @@ function readSqlite(site: Site): Stored {
 
 function readJsonl(backend: Backend, site: Site): Stored {
   return {
-    // A line stored before routing has no route: it took the default route (lite/src/Storage/Records.php).
-    requests: (readLines(backend, site, 'requests') as StoredRequest[]).map((request) => ({ route: 'default', ...request })),
-    spamLog: readLines(backend, site, 'spam-log') as SpamEntry[],
+    // A line stored before routing has no route: it took the default route (lite/src/Storage/Records.php). A line
+    // stored before the server data has none.
+    requests: (readLines(backend, site, 'requests') as StoredRequest[]).map((request) => ({
+      route: 'default',
+      ...emptyServerData,
+      ...request,
+    })),
+    spamLog: (readLines(backend, site, 'spam-log') as SpamEntry[]).map((entry) => ({ ...emptyServerData, ...entry })),
     rateHits: readLines(backend, site, 'rate-hits').length,
   };
 }

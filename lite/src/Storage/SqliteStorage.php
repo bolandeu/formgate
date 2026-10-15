@@ -11,6 +11,7 @@ namespace Formgate\Storage;
 use DateTimeImmutable;
 use Formgate\Channels\DeliveryReport;
 use Formgate\Intake\Request;
+use Formgate\Intake\ServerData;
 use Formgate\Routing\Route;
 use Formgate\Spam\SpamReason;
 use LogicException;
@@ -132,7 +133,8 @@ final class SqliteStorage implements Storage
      * Brings a database of an older version to the tables above. The spam log keeps the service field values: an
      * older database has the table without that column, and its entries get none. The spam log of a project names the
      * project: a database made by Pro v0.3.0 has the table without that column. A Lite request keeps its route: an older
-     * database has the requests without that column, and they read as the default route. The duplicate store keeps the end of
+     * database has the requests without that column, and they read as the default route. The requests and the spam log keep the server data:
+     * an older database has the tables without those columns, and their rows read them as empty. The duplicate store keeps the end of
      * each window: an older database has the time of the record instead, so its hashes end at the upgrade. The checks
      * and the changes are one transaction, so two processes at the upgrade do not both change a table.
      */
@@ -148,10 +150,21 @@ final class SqliteStorage implements Storage
             if (!$forProject && !in_array('route', self::columns($db, 'requests'), true)) {
                 $db->exec('ALTER TABLE requests ADD COLUMN route TEXT NOT NULL DEFAULT \'default\'');
             }
+            foreach ($forProject ? ['spam_log'] : ['requests', 'spam_log'] as $table) {
+                self::addServerColumns($db, $table);
+            }
             if (in_array('at', self::columns($db, 'duplicates'), true)) {
                 $db->exec('ALTER TABLE duplicates RENAME COLUMN at TO until');
             }
         });
+    }
+
+    /** Adds the columns of the server data that the table lacks: the rows of an older database read them as empty. */
+    private static function addServerColumns(PDO $db, string $table): void
+    {
+        foreach (array_diff(ServerData::NAMES, self::columns($db, $table)) as $name) {
+            $db->exec("ALTER TABLE {$table} ADD COLUMN {$name} TEXT NOT NULL DEFAULT ''");
+        }
     }
 
     /** @return list<string> the column names of the table */

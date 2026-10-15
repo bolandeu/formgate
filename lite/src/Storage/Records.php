@@ -47,6 +47,6 @@ final class Records
             'received_at' => self::time($request->receivedAt),
             'form' => $request->service->form,
             'fields' => $request->fields,
-        ];
+        ] + $request->server->values();
     }
 }

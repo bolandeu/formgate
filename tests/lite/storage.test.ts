@@ -13,7 +13,7 @@ import {
   startFakeChannel,
   startLite,
 } from '../support/lite.ts';
-import { type Backend, backends, forceBackend, guardLine, readStored } from '../support/storage.ts';
+import { type Backend, backends, forceBackend, guardLine, readStored, writeOldRequest } from '../support/storage.ts';
 
 const liteDir = fileURLToPath(new URL('../../lite/', import.meta.url));
 const visitorForm = { __form: 'callback', name: 'Анна', phone: '+7 900 123-45-67', consent: '1' };
@@ -141,6 +141,25 @@ describe.each(backends)('the %s backend', (backend: Backend) => {
     expect(partial.channels['telegram #2'].reason).not.toBe('');
     expect(failed.status).toBe('failed');
     expect(failed.channels['telegram #1'].delivered).toBe(false);
+  });
+
+  it('reads a request stored before the server data with empty server data and gives new requests the data', async () => {
+    writeOldRequest(backend, site, {
+      received_at: '2026-01-01T09:00:00Z',
+      form: 'callback',
+      fields: { name: 'Старая' },
+      status: 'delivered',
+      channels: { 'telegram #1': { delivered: true, reason: '' } },
+    });
+
+    await withLite(projectSettings(telegram), async (lite) => {
+      await postFormForJson(lite.url, visitorForm);
+    });
+
+    const [old, added] = readStored(backend, site).requests;
+    expect(old).toMatchObject({ fields: { name: 'Старая' }, request_id: '', ip: '', user_agent: '', origin_host: '' });
+    expect(added.request_id).toMatch(/^[A-Za-z0-9_-]{16,}$/);
+    expect(added.origin_host).toBe('site.ru');
   });
 
   // Requests and honeypot entries 31 and 29 days before 2026-03-01 12:00, then one request on that day.

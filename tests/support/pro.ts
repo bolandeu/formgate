@@ -41,6 +41,10 @@ interface QueuedRequest {
   fields: Record<string, string>;
   status: string;
   channels: Record<string, { delivered: boolean; reason: string }>;
+  request_id: string;
+  ip: string;
+  user_agent: string;
+  origin_host: string;
 }
 
 export function createProFolders(): ProFolders {
@@ -117,7 +121,7 @@ export function readQueue(folders: ProFolders): QueuedRequest[] {
   const db = new DatabaseSync(file, { readOnly: true });
   try {
     if (!db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'queue'").get()) return [];
-    const rows = db.prepare('SELECT project_key, received_at, form, fields, status, channels FROM queue ORDER BY id').all();
+    const rows = db.prepare('SELECT project_key, received_at, form, fields, status, channels, request_id, ip, user_agent, origin_host FROM queue ORDER BY id').all();
     return rows.map((row) => ({
       ...row,
       fields: JSON.parse(String(row.fields)),

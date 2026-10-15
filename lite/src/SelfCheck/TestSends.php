@@ -11,6 +11,7 @@ use Formgate\Channels\ChannelFactory;
 use Formgate\Channels\ChannelResult;
 use Formgate\Channels\Email\EmailMethod;
 use Formgate\Intake\Request;
+use Formgate\Intake\ServerData;
 use Formgate\Intake\ServiceFields;
 use Formgate\Routing\Router;
 use Formgate\Settings\Settings;
@@ -27,6 +28,7 @@ final class TestSends
             ['test' => 'This message is a test from the Formgate self-check. It is not a request.'],
             ServiceFields::fromValues(['__subject' => self::SUBJECT]),
             new DateTimeImmutable('now', $settings->timezone()),
+            ServerData::empty(),
         );
         $findings = [];
         foreach ($settings->channels() as $index => $channel) {
