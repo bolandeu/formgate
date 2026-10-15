@@ -1,6 +1,7 @@
 // Starts php -S for the Lite and Pro harnesses and stops it with its PHP_CLI_SERVER_WORKERS children: the server
 // runs as the leader of its own process group, and stop() signals the whole group. A plain kill of the leader
-// leaves the workers alive.
+// leaves the workers alive. A watchdog process outside the group kills the group when the process that started it
+// is gone, also after SIGKILL, and a failed start stops the group before the error is thrown.
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 
@@ -19,6 +20,21 @@ interface PhpServerOptions {
   env: Record<string, string>;
   // The path that answers once the server is up.
   readyPath: string;
+}
+
+// Polls the parent and the group every 0.2 s; it ends when either is gone, and kills the group if the parent went.
+// The `kill -s <signal> --` form works in both dash (/bin/sh on Debian and Ubuntu) and bash.
+const watchdogScript = `
+while kill -s 0 "$1" 2>/dev/null && kill -s 0 -- "-$2" 2>/dev/null; do sleep 0.2; done
+kill -s TERM -- "-$2" 2>/dev/null
+`;
+
+function killGroup(leaderPid: number) {
+  try {
+    process.kill(-leaderPid, 'SIGTERM');
+  } catch {
+    // The group is gone already.
+  }
 }
 
 function freePort() {
@@ -55,15 +71,16 @@ export async function startPhpServer(options: PhpServerOptions): Promise<PhpServ
     ],
     { env: { ...process.env, ...options.env }, stdio: 'ignore', detached: true },
   );
-  await waitForServer(origin + options.readyPath);
-  return {
-    origin,
-    stop: () => {
-      try {
-        process.kill(-(child.pid as number), 'SIGTERM');
-      } catch {
-        // The group is gone already.
-      }
-    },
-  };
+  const groupId = child.pid as number;
+  spawn('sh', ['-c', watchdogScript, 'watchdog', String(process.pid), String(groupId)], {
+    stdio: 'ignore',
+    detached: true,
+  }).unref();
+  try {
+    await waitForServer(origin + options.readyPath);
+  } catch (error) {
+    killGroup(groupId);
+    throw error;
+  }
+  return { origin, stop: () => killGroup(groupId) };
 }

@@ -26,8 +26,8 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  lite.stop();
-  await telegram.stop();
+  lite?.stop();
+  await telegram?.stop();
 });
 
 afterEach(() => {

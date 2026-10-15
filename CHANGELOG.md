@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.20.10 — 2026-10-16
+
+### Outside epics
+
+- Tests: a php -S server started by a test never outlives the test run
+
 ## v0.20.9 — 2026-10-15
 
 ### Outside epics
