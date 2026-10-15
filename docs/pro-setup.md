@@ -91,7 +91,7 @@ docker compose exec web php bin/formgate project:create Dev localhost email \
 Остальные команды проектов (`docker compose exec web php bin/formgate <команда>`):
 
 - `project:show [ключ]` — один проект (секреты скрыты) или список всех.
-- `project:set <ключ> <путь> <значение>` — одна настройка. Путь — один из `project.thank_you_url`, `project.error_url`, `project.duplicate_window_seconds`, `project.rate_limit.requests`, `project.rate_limit.window_seconds`, `project.required`, `project.require_token`, `project.token_min_seconds`, `project.token_max_seconds` или `limits.<имя>` (например, `limits.max_fields`). Пример: `project:set <ключ> project.thank_you_url https://site.ru/spasibo`. Срок хранения в Pro общий для всех проектов (`FORMGATE_RETENTION_DAYS`, раздел 4, «Очередь, повторы, хранение и оповещения»); `project.retention_days` Pro не читает.
+- `project:set <ключ> <путь> <значение>` — одна настройка. Путь — один из `project.thank_you_url`, `project.error_url`, `project.duplicate_window_seconds`, `project.rate_limit.requests`, `project.rate_limit.window_seconds`, `project.required`, `project.require_token`, `project.token_min_seconds`, `project.token_max_seconds` или `limits.<имя>` (например, `limits.max_fields`). Пример: `project:set <ключ> project.thank_you_url https://site.ru/spasibo`. Срок хранения в Pro общий для всех проектов (`FORMGATE_RETENTION_DAYS`, раздел 4, «Очередь, повторы, хранение и оповещения»); `project.retention_days` в Pro `project:set` отклоняет.
 - `project:domain:add <ключ> <домен>` — разрешить ещё один домен.
 - `project:domain:remove <ключ> <домен>` — убрать домен.
 - `project:channel:add <ключ> <тип> -o ...` — добавить канал (`telegram`, `email`, `bitrix24`).

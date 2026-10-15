@@ -145,19 +145,28 @@ describe('project:show', () => {
 });
 
 describe('project:set', () => {
-  it('changes retention and a limit, and refuses a wrong value with the field', async () => {
+  it('changes a limit, and refuses a wrong value with the field', async () => {
     const key = await createProject(folders, 'Acme', 'site.ru');
 
-    expect((await runProject(folders, 'set', [key, 'project.retention_days', '30'])).status).toBe(0);
     expect((await runProject(folders, 'set', [key, 'limits.max_fields', '20'])).status).toBe(0);
     const shown = JSON.parse((await runProject(folders, 'show', [key])).stdout);
-    expect(shown.project.retention_days).toBe(30);
     expect(shown.limits).toEqual({ max_fields: 20 });
 
     const before = projectFile(folders, key);
-    const refused = await runProject(folders, 'set', [key, 'project.retention_days', 'soon']);
+    const refused = await runProject(folders, 'set', [key, 'limits.max_fields', 'soon']);
     expect(refused.status).not.toBe(0);
-    expect(refused.stderr).toContain('project.retention_days');
+    expect(refused.stderr).toContain('limits.max_fields');
+    expect(projectFile(folders, key)).toBe(before);
+  });
+
+  it('refuses project.retention_days: retention is global in Pro', async () => {
+    const key = await createProject(folders, 'Acme', 'site.ru');
+    const before = projectFile(folders, key);
+
+    const run = await runProject(folders, 'set', [key, 'project.retention_days', '30']);
+
+    expect(run.status).not.toBe(0);
+    expect(run.stderr).toContain('project.retention_days');
     expect(projectFile(folders, key)).toBe(before);
   });
 

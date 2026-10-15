@@ -1,7 +1,7 @@
 <?php
 // The edits of the project settings that the CLI and the admin API make, each a pure function from the values of a
 // settings file to the new values: a new project, the domains, the channels and the plain settings (thank-you and error
-// pages, retention and limits). The registry validates the result before it writes; a wrong request throws with the
+// pages and limits). The registry validates the result before it writes; a wrong request throws with the
 // field.
 
 declare(strict_types=1);
@@ -13,11 +13,10 @@ use InvalidArgumentException;
 
 final class ProjectChanges
 {
-    /** The settings that `set` changes, other than the limits: path => type (`string`, `list`, `int`, `int-or-none`, `bool`). */
+    /** The settings that `set` changes, other than the limits: path => type (`string`, `list`, `int`, `bool`). */
     private const SETTABLE = [
         'project.thank_you_url' => 'string',
         'project.error_url' => 'string',
-        'project.retention_days' => 'int-or-none',
         'project.duplicate_window_seconds' => 'int',
         'project.rate_limit.requests' => 'int',
         'project.rate_limit.window_seconds' => 'int',
@@ -120,7 +119,7 @@ final class ProjectChanges
     }
 
     /**
-     * Sets one setting by its dotted path, for example `project.retention_days` or `limits.max_fields`.
+     * Sets one setting by its dotted path, for example `project.thank_you_url` or `limits.max_fields`.
      *
      * @param array<string, mixed> $values
      * @return array<string, mixed>
@@ -134,8 +133,7 @@ final class ProjectChanges
             'string' => $value,
             'list' => array_values(array_filter(array_map(trim(...), explode(',', $value)), fn (string $word): bool => $word !== '')),
             'bool' => self::truth($path, $value),
-            'int-or-none' => $value === 'none' ? null : self::wholeNumber($path, $value, ' or none'),
-            default => self::wholeNumber($path, $value, ''),
+            default => self::wholeNumber($path, $value),
         };
         $target = &$values;
         foreach (explode('.', $path) as $step) {
@@ -181,10 +179,10 @@ final class ProjectChanges
         };
     }
 
-    private static function wholeNumber(string $path, string $value, string $orWord): int
+    private static function wholeNumber(string $path, string $value): int
     {
         if (preg_match('/^\d+$/', $value) !== 1) {
-            throw new InvalidArgumentException("{$path}: must be a whole number{$orWord}, got '{$value}'");
+            throw new InvalidArgumentException("{$path}: must be a whole number, got '{$value}'");
         }
         return (int) $value;
     }

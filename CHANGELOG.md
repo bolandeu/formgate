@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.17.2 — 2026-10-15
+
+### Cleanup: current docs only, no server paths in the JSON self-check
+
+Every doc of the repo says what the code does now, once, in the right place; a done plan or backlog item is gone; the public docs say nothing about private repos; the JSON self-check gives where the settings are, not the server path.
+
+- Pro: project:set refuses project.retention_days; retention stays global
+
 ## v0.17.1 — 2026-10-15
 
 ### Cleanup: current docs only, no server paths in the JSON self-check
