@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.20.9 — 2026-10-15
+
+### Outside epics
+
+- Publish gate: titles of unreleased tasks and epics pass the public changelog scan before a release
+
 ## v0.20.8 — 2026-10-15
 
 ### Outside epics
