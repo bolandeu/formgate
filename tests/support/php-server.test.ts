@@ -34,8 +34,7 @@ function markedGroups(): number[] {
 
 // The number of live processes in the group: the leader and its workers.
 function groupSize(group: number) {
-  const rows = execFileSync('ps', ['-axo', 'pgid='], { encoding: 'utf8' }).split('\n');
-  return rows.filter((row) => Number.parseInt(row.trim(), 10) === group).length;
+  return groupRows(group).filter((row) => !isZombie(row)).length;
 }
 
 function killMarkedGroups() {
@@ -48,13 +47,27 @@ function killMarkedGroups() {
   }
 }
 
+// The processes of the group as `ps` rows: pid, pgid, state, command.
+function groupRows(group: number) {
+  const rows = execFileSync('ps', ['-axo', 'pid=,pgid=,stat=,command='], { encoding: 'utf8' }).split('\n');
+  return rows.filter((row) => Number.parseInt(row.trim().split(/\s+/)[1], 10) === group);
+}
+
+function isZombie(row: string) {
+  return row.trim().split(/\s+/)[2].startsWith('Z');
+}
+
+// A group is gone when none of its processes is alive. A zombie (state Z) is dead: in the CI job container PID 1
+// is `sleep 3600`, which never reaps orphans, so the killed workers stay in the group as zombies and
+// `kill(-group, 0)` would still find the group.
 function groupIsGone(group: number) {
-  try {
-    process.kill(-group, 0);
-    return false;
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code === 'ESRCH';
-  }
+  return groupRows(group).every(isZombie);
+}
+
+// Waits up to 5 s for the group to be gone; on failure the message shows the processes that stay in it.
+async function expectGroupGone(group: number) {
+  const gone = await waitUntil(() => groupIsGone(group), 5000);
+  expect(gone, `processes stay in group ${group}:\n${groupRows(group).join('\n')}`).toBe(true);
 }
 
 async function waitUntil(done: () => boolean, timeoutMs: number) {
@@ -84,7 +97,7 @@ describe('startPhpServer', () => {
     server.stop();
     server.stop();
 
-    expect(await waitUntil(() => groupIsGone(group), 5000)).toBe(true);
+    await expectGroupGone(group);
   });
 
   it('a start that never gets an answer throws and leaves no process of the group', async () => {
@@ -96,7 +109,7 @@ describe('startPhpServer', () => {
 
     await expect(start).rejects.toThrow('php -S did not start');
 
-    expect(await waitUntil(() => groupIsGone(group), 5000)).toBe(true);
+    await expectGroupGone(group);
   }, 20_000);
 
   it('the group dies within 5 s when the process that started it is killed with SIGKILL', async () => {
@@ -118,9 +131,41 @@ describe('startPhpServer', () => {
 
       starter.kill('SIGKILL');
 
-      expect(await waitUntil(() => groupIsGone(group), 5000)).toBe(true);
+      await expectGroupGone(group);
     } finally {
       starter.kill('SIGKILL');
+    }
+  });
+});
+
+describe('groupIsGone', () => {
+  // A perl parent forks a child into a new group whose id is the child pid, prints that pid and never reaps the
+  // child. perl sets the group, not the shell: dash (/bin/sh on Debian) has no job control without a tty.
+  async function holdChild(child: 'exit' | 'sleep 30') {
+    const perl = `my $pid = fork; if ($pid == 0) { setpgrp(0, 0); ${child}; } setpgrp($pid, $pid); $| = 1; print "$pid\\n"; sleep 30;`;
+    const holder = spawn('perl', ['-e', perl], { stdio: ['ignore', 'pipe', 'inherit'] });
+    const group = await new Promise<number>((resolve) => holder.stdout.once('data', (chunk) => resolve(Number.parseInt(String(chunk), 10))));
+    return { holder, group };
+  }
+
+  it('counts a group whose processes are all zombies as gone', async () => {
+    const { holder, group } = await holdChild('exit');
+    try {
+      const zombie = await waitUntil(() => groupRows(group).some(isZombie), 5000);
+      expect(zombie, `no zombie in group ${group}`).toBe(true);
+      expect(groupIsGone(group)).toBe(true);
+    } finally {
+      holder.kill('SIGKILL');
+    }
+  });
+
+  it('does not count a group with a live process as gone', async () => {
+    const { holder, group } = await holdChild('sleep 30');
+    try {
+      expect(groupIsGone(group)).toBe(false);
+    } finally {
+      process.kill(-group, 'SIGKILL');
+      holder.kill('SIGKILL');
     }
   });
 });

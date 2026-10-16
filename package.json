@@ -1,6 +1,6 @@
 {
   "name": "formgate",
-  "version": "0.20.10",
+  "version": "0.20.12",
   "license": "MIT",
   "description": "Form gateway: Lite PHP handler, client and Astro integration",
   "type": "module",

@@ -3,10 +3,12 @@
 import { Window } from 'happy-dom';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { expect, it, vi } from 'vitest';
+import { afterAll, expect, it, vi } from 'vitest';
 import formgate from '../../src/astro/index.ts';
 import { posts } from '../client/support.ts';
-import { buildSite } from '../support/astro-site.ts';
+import { buildSite, disposeBuiltSites } from '../support/astro-site.ts';
+
+afterAll(disposeBuiltSites);
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 const bodyOf = (html: string) => /<body[^>]*>([\s\S]*)<\/body>/.exec(html)![1];

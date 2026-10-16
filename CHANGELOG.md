@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.20.12 — 2026-10-16
+
+### Outside epics
+
+- Tests: an Astro fixture build leaves no folder in the temp directory
+- Release: the downstream compatibility check installs its scoped packages from the private registry
+- Tests: the php -S group check passes in a container where zombies are not reaped
+
+## v0.20.11 — 2026-10-16
+
+### Outside epics
+
+- Release: a red downstream compatibility check publishes nothing
+
 ## v0.20.10 — 2026-10-16
 
 ### Outside epics
